@@ -6,6 +6,24 @@ use App\Models\conferenceSpeakers;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+
+	/**
+     * 
+     * 
+     *  @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
+ *
+ * 
+ * for 2 parameter
+ * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value) 
+ * 
+
+ *
+ * 
+
+ * 
+ *
+ */
+
 class Conferences extends Model
 {
     use HasFactory;

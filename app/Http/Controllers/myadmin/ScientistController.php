@@ -13,48 +13,91 @@ use App\Models\Researchgroup;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use File;
+use Illuminate\Contracts\View\View;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Collection;
 
 class ScientistController extends Controller
 {
-    public function __Construct()
+    /**
+     * @var array<string, string>
+     */
+    protected array $statusArrays;
+
+    /**
+     * @var Collection<int, category>
+     */
+    
+    protected Collection $catlists;
+
+
+      /**
+     * @var string
+     */
+    protected array $roles;
+
+
+      /**
+     * @var int
+     */
+    protected int $GrantSectionId;
+
+
+    public function __construct()
     {
-        $this->statusArrays = array('' => 'Status', '0' => 'inActive', '1' => 'Active');
+        $this->statusArrays = ['' => 'Status', 'inactive' => 'inActive', 'active' => 'Active'];
         $this->roles = 'scientists';
         $this->GrantSectionId = 12;
     }
 
-    public function index(Request $request)
+    public function index(Request $request): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
-            return redirect()->route('singleprofile');
+            return Redirect::route('singleprofile');
         }
-        $search = $request->query('search');
-        $userlists = User::join('userdetails', 'users.id', '=', 'userdetails.userid')->select(['users.*', 'userdetails.profilepic', 'userdetails.designation'])->where('users.roles', $this->roles)
+        $search = $request->input('search');
+        $userlists = User::join('userdetails', 'users.id', '=', 'userdetails.userid')
+            ->select(['users.*', 'userdetails.profilepic', 'userdetails.designation'])
+            ->where('users.roles', $this->roles)
             ->orderBy('id', 'DESC');
         if (request('search')) {
             $userlists->where('users.name', 'LIKE', '%' . request('search') . '%');
         }
         $lists = $userlists->paginate(40);
-        return view('myadmin.scientists.listhtml', ['lists' => $lists, 'search' => $search, 'totalrecords' => 'Scientists : ' . $lists->count() . ' Records found']);
+        return view('myadmin.scientists.listhtml', [
+            'lists' => $lists,
+            'search' => $search,
+            'totalrecords' => 'Scientists : ' . $lists->count() . ' Records found'
+        ]);
     }
-    public function create()
+
+    public function create(): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
-            return redirect()->route('singleprofile');
+            return Redirect::route('singleprofile');
         }
         $sections = Section::where('isactive', 1)->where('type', 'scientists')->get();
-        return view('myadmin.scientists.createhtml')
-            ->with('statusArrays', $this->statusArrays)
-            ->with('sections', $sections)
-            ->with('heading', 'Add new scientist');
+        return view('myadmin.scientists.createhtml', [
+            'statusArrays' => $this->statusArrays,
+            'sections' => $sections,
+            'heading' => 'Add new scientist'
+        ]);
     }
-    public function sientistchangepassword()
+
+    public function sientistchangepassword(): View|Factory
     {
         $sections = Section::where('isactive', 1)->where('type', 'scientists')->get();
-        return view('myadmin.scientists.changepasswordhtml')
-            ->with('heading', 'Change Password');
+        return view('myadmin.scientists.changepasswordhtml', [
+            'heading' => 'Change Password'
+        ]);
     }
-    public function updatesientistchangepassword(Request $request)
+
+    public function updatesientistchangepassword(Request $request): RedirectResponse
     {
         $request->validate([
             'old_password' => 'required',
@@ -69,7 +112,8 @@ class ScientistController extends Controller
         ]);
         return back()->with("status", "Password changed successfully!");
     }
-    public function store(Request $request)
+
+    public function store(Request $request): RedirectResponse
     {
         $validator = $request->validate(
             [
@@ -93,49 +137,57 @@ class ScientistController extends Controller
         );
 
         $user = new User();
-        $user->sirname = $request->sirname;
-        $user->name = $request->name;
-        $user->password = Hash::make($request->password);
+        $user->sirname = $request->input('sirname');
+        $user->name = $request->input('name');
+        $user->password = Hash::make($request->input('password'));
         $user->roles = $this->roles;
-        $user->email = $request->email;
-        $user->isactive = $request->isactive;
+        $user->email = $request->input('email');
+        $user->isactive = $request->input('isactive');
         $user->save();
         $profilepicName = '';
-        if (!empty($request->file('profilepic'))) {
+        if ($request->hasFile('profilepic')) {
             $profilepic = $request->file('profilepic');
             $profilepicName = $user->id . '_' . time() . '.' . $profilepic->extension();
             $profilepic->move(public_path('userpics'), $profilepicName);
         }
         Userdetail::create([
             'userid' => $user->id,
-			'sectionid' => $request->sectionid,
-			'designation' => $request->designation,
+            'sectionid' => $request->input('sectionid'),
+            'designation' => $request->input('designation'),
             'profilepic' => $profilepicName,
-            'aboutme' => $request->aboutme
+            'aboutme' => $request->input('aboutme')
         ]);
-        return redirect()->route('scientists')->with('status', ' scientist has been created successfully');
+        return Redirect::route('scientists')->with('status', ' scientist has been created successfully');
     }
-    public function show($id)
+
+    public function show(int $id): void
     {
     }
-    public function edit($userid)
+
+    public function edit(int $userid): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
-            return redirect()->route('singleprofile');
+            return Redirect::route('singleprofile');
         }
         $sections = Section::where('isactive', 1)->where('type', 'scientists')->get();
-        $userinfo = User::join('userdetails', 'users.id', '=', 'userdetails.userid')->select(['users.*', 'userdetails.profilepic', 'userdetails.aboutme', 'userdetails.sectionid', 'userdetails.designation', 'userdetails.googlelink', 'userdetails.personalgroupinfo'])->where('users.roles', $this->roles)->where('users.id', $userid)->first();
+        $userinfo = User::join('userdetails', 'users.id', '=', 'userdetails.userid')
+            ->select(['users.*', 'userdetails.profilepic', 'userdetails.aboutme', 'userdetails.sectionid', 'userdetails.designation', 'userdetails.googlelink', 'userdetails.personalgroupinfo'])
+            ->where('users.roles', $this->roles)
+            ->where('users.id', $userid)
+            ->first();
         if ($userinfo) {
-            return view('myadmin.scientists.edithtml')
-                ->with('statusArrays', $this->statusArrays)
-                ->with('heading', 'Edit scientist')
-                ->with('sections', $sections)
-                ->with('userinfo', $userinfo);
+            return view('myadmin.scientists.edithtml', [
+                'statusArrays' => $this->statusArrays,
+                'heading' => 'Edit scientist',
+                'sections' => $sections,
+                'userinfo' => $userinfo
+            ]);
         } else {
-            return redirect()->route('scientists')->with('status', 'Mentioned Id does not exist.');
+            return Redirect::route('scientists')->with('status', 'Mentioned Id does not exist.');
         }
     }
-    public function update(Request $request, $userid)
+
+    public function update(Request $request, int $userid): RedirectResponse
     {
         $validator = $request->validate(
             [
@@ -159,28 +211,32 @@ class ScientistController extends Controller
             ]
         );
         $updatePassword = false;
-        if ($request->password != '' || $request->password_confirmation != '') {
-            if ($request->password == $request->password_confirmation) {
+        if ($request->input('password') != '' || $request->input('password_confirmation') != '') {
+            if ($request->input('password') == $request->input('password_confirmation')) {
                 $updatePassword = true;
             } else {
-                return redirect()->back()->with('status', ' Password & confirm password did not matched');
+                return Redirect::back()->with('status', ' Password & confirm password did not matched');
             }
         }
 
-        $userInfo = User::join('userdetails', 'users.id', '=', 'userdetails.userid')->select(['users.*', 'userdetails.profilepic', 'userdetails.aboutme'])->where('users.roles', $this->roles)->where('users.id', $userid)->first();
+        $userInfo = User::join('userdetails', 'users.id', '=', 'userdetails.userid')
+            ->select(['users.*', 'userdetails.profilepic', 'userdetails.aboutme'])
+            ->where('users.roles', $this->roles)
+            ->where('users.id', $userid)
+            ->first();
 
         if ($userInfo) {
-            $userInfo->name = $request->name;
-            $userInfo->sirname = $request->sirname;
+            $userInfo->name = $request->input('name');
+            $userInfo->sirname = $request->input('sirname');
             if ($updatePassword) {
-                $userInfo->password = Hash::make($request->password_confirmation);
+                $userInfo->password = Hash::make($request->input('password_confirmation'));
             }
             $userInfo->roles = $this->roles;
-            $userInfo->email = $request->email;
-            $userInfo->isactive = $request->isactive;
+            $userInfo->email = $request->input('email');
+            $userInfo->isactive = $request->input('isactive');
             $userInfo->save();
             $profilepicName = '';
-            if (!empty($request->file('profilepic'))) {
+            if ($request->hasFile('profilepic')) {
                 $profilepic = $request->file('profilepic');
                 $profilepicName = $userid . '_' . time() . '.' . $profilepic->extension();
                 $profilepic->move(public_path('userpics'), $profilepicName);
@@ -189,138 +245,202 @@ class ScientistController extends Controller
                 UserDetail::where('userid', $userid)
                     ->update([
                         'profilepic' => $profilepicName,
-                        'designation' => $request->designation,
-                        'aboutme' => $request->aboutme,
-                        'sectionid' => $request->sectionid,
-                        'personalgroupinfo' => $request->personalgroupinfo,
-                        'googlelink' => $request->googlelink
+                        'designation' => $request->input('designation'),
+                        'aboutme' => $request->input('aboutme'),
+                        'sectionid' => $request->input('sectionid'),
+                        'personalgroupinfo' => $request->input('personalgroupinfo'),
+                        'googlelink' => $request->input('googlelink')
                     ]);
             } else {
                 UserDetail::where('userid', $userid)
                     ->update([
-                        'designation' => $request->designation,
-                        'aboutme' => $request->aboutme,
-                        'sectionid' => $request->sectionid,
-                        'personalgroupinfo' => $request->personalgroupinfo,
-                        'googlelink' => $request->googlelink
+                        'designation' => $request->input('designation'),
+                        'aboutme' => $request->input('aboutme'),
+                        'sectionid' => $request->input('sectionid'),
+                        'personalgroupinfo' => $request->input('personalgroupinfo'),
+                        'googlelink' => $request->input('googlelink')
                     ]);
             }
-            return redirect()->route('scientists')->with('status', ' Profile has been updated successfully');
+            return Redirect::route('scientists')->with('status', ' Profile has been updated successfully');
         } else {
-            return redirect()->route('scientists')->with('status', ' Mentioned Id does not exist');
+            return Redirect::route('scientists')->with('status', ' Mentioned Id does not exist');
         }
     }
-    public function destroy(Request $request, $id)
+
+    public function destroy(Request $request, int $id): RedirectResponse
     {
-        if ($request->tag == 'researchgroups') {
-            $info  = Researchgroup::where('userid', Auth()->user()->id)->where('id', $id)->first();
-            if ($info->interimage != "") {
+        $tag = $request->input('tag');
+
+        if ($tag == 'researchgroups') {
+            $info = Researchgroup::where('userid', Auth::id())->where('id', $id)->first();
+            if ($info && $info->interimage != "") {
                 File::delete(public_path('userpics') . '/' . $info->interimage);
                 Researchgroup::where('id', $id)->delete();
             }
-        } else if ($request->tag == 'researchinterest') {
+        } else if ($tag == 'researchinterest') {
             Researchinterest::where('id', $id)->delete();
-        } else if ($request->tag == 'relatedimages') {
-            $info  = Researchinterest::where('userid', Auth()->user()->id)->where('id', $id)->where('type', 'relatedimages')->first();
-            if ($info->description != "") {
+        } else if ($tag == 'relatedimages') {
+            $info = Researchinterest::where('userid', Auth::id())->where('id', $id)->where('type', 'relatedimages')->first();
+            if ($info && $info->description != "") {
                 File::delete(public_path('userpics') . '/' . $info->description);
                 Researchinterest::where('id', $id)->delete();
             }
         }
-        return redirect()->back()->with('status', ' Content has been removed successfully');
+        return Redirect::back()->with('status', ' Content has been removed successfully');
     }
-    ////////////////////////////////////////////////////////
-    public function removescientists($pageid)
-    {
 
+    public function removescientists(int $pageid): RedirectResponse
+    {
         User::where('id', $pageid)->delete();
-        return redirect()->route('scientists')->with('status', 'Page Remove Successfully');
+        return Redirect::route('scientists')->with('status', 'Page Remove Successfully');
     }
-    ////////////////////////////////////////////////////
-    public function scientiststatus(Request $request)
-    {
 
-        $userids = $request->post_id;
-        $status_type = $request->status_type;
+    public function scientiststatus(Request $request): JsonResponse
+    {
+        $userids = $request->input('post_id');
+        $status_type = $request->input('status_type');
         User::whereIn('id', $userids)->update(['isactive' => $status_type]);
-        return response()->json(['status' => true]);
+        return Response::json(['status' => true]);
     }
 
-    /********Profile************/
-    public function singleprofile()
+    public function singleprofile(): View|Factory|RedirectResponse
     {
-        if (Auth()->user()->ispasswordchange == 0) {
-            return redirect()->route('sientistchangepassword');
+        if (!Auth::check()) {
+            return Redirect::route('login');
         }
-        $userinfo  = User::join('userdetails', 'users.id', '=', 'userdetails.userid')->select(['users.id', 'users.name', 'users.email', 'users.sirname', 'userdetails.*'])->where('users.roles', $this->roles)->where('users.id', Auth()->user()->id)->first();
-        return view('myadmin.scientists.singleprofilehtml')
-            ->with('userinfo', $userinfo)
-            ->with('heading', 'Profile');
-    }
-    public function scientistimages()
-    {
-        if (Auth()->user()->ispasswordchange == 0) {
-            return redirect()->route('sientistchangepassword');
-        }
-        $lists  = Researchinterest::where('userid', Auth()->user()->id)->where('type', 'relatedimages')->orderBy('id', 'DESC')->get();
-        return view('myadmin.scientists.scientistimageshtml')
-            ->with('lists', $lists)
-            ->with('heading', 'Related Images');
-    }
-    public function scientistresearchinterest()
-    {
-        if (Auth()->user()->ispasswordchange == 0) {
-            return redirect()->route('sientistchangepassword');
-        }
-        $lists  = Researchinterest::where('userid', Auth()->user()->id)->where('type', 'researchinterest')->orderBy('sortorder', 'ASC')->paginate(50);
 
-        return view('myadmin.scientists.researchinteresthtml')
-            ->with('lists', $lists)
-            ->with('heading', 'Research Interest');
-    }
-    public function createscientistresearchinterest(Request $request)
-    {
-        $info = array();
-        if (!empty($request->tokenid)) {
-            $info  = Researchinterest::where('userid', Auth()->user()->id)->where('id', $request->tokenid)->first();
+        $user = Auth::user();
+        if ($user && $user->ispasswordchange == 0) {
+            return Redirect::route('sientistchangepassword');
         }
-        return view('myadmin.scientists.modals.create_researchinteresthtml')
-            ->with('info', $info)
-            ->with('statusArrays', $this->statusArrays)
-            ->with('heading', 'Research Interest');
+
+        $userinfo = User::join('userdetails', 'users.id', '=', 'userdetails.userid')
+            ->select(['users.id', 'users.name', 'users.email', 'users.sirname', 'userdetails.*'])
+            ->where('users.roles', $this->roles)
+            ->where('users.id', Auth::id())
+            ->first();
+
+        return view('myadmin.scientists.singleprofilehtml', [
+            'userinfo' => $userinfo,
+            'heading' => 'Profile'
+        ]);
     }
-    public function scientistresearchhighlights()
+
+    public function scientistimages(): View|Factory|RedirectResponse
     {
-        if (Auth()->user()->ispasswordchange == 0) {
-            return redirect()->route('sientistchangepassword');
+        if (!Auth::check()) {
+            return Redirect::route('login');
         }
-        $lists  = Researchinterest::where('userid', Auth()->user()->id)->where('type', 'researchhighlights')->orderBy('sortorder', 'ASC')->paginate(50);
-        return view('myadmin.scientists.scientistresearchhighlightshtml')
-            ->with('lists', $lists)
-            ->with('heading', 'Research Highlights');
+
+        $user = Auth::user();
+        if ($user && $user->ispasswordchange == 0) {
+            return Redirect::route('sientistchangepassword');
+        }
+
+        $lists = Researchinterest::where('userid', Auth::id())
+            ->where('type', 'relatedimages')
+            ->orderBy('id', 'DESC')
+            ->get();
+
+        return view('myadmin.scientists.scientistimageshtml', [
+            'lists' => $lists,
+            'heading' => 'Related Images'
+        ]);
     }
-    public function createscientistresearchhighlights(Request $request)
+
+    public function scientistresearchinterest(): View|Factory|RedirectResponse
     {
-        $info = array();
-        if (!empty($request->tokenid)) {
-            $info  = Researchinterest::where('userid', Auth()->user()->id)->where('id', $request->tokenid)->first();
+        if (!Auth::check()) {
+            return Redirect::route('login');
         }
-        return view('myadmin.scientists.modals.create_scientistresearchhighlightshtml')
-            ->with('info', $info)
-            ->with('statusArrays', $this->statusArrays)
-            ->with('heading', 'Research Highlights');
+
+        $user = Auth::user();
+        if ($user && $user->ispasswordchange == 0) {
+            return Redirect::route('sientistchangepassword');
+        }
+
+        $lists = Researchinterest::where('userid', Auth::id())
+            ->where('type', 'researchinterest')
+            ->orderBy('sortorder', 'ASC')
+            ->paginate(50);
+
+        return view('myadmin.scientists.researchinteresthtml', [
+            'lists' => $lists,
+            'heading' => 'Research Interest'
+        ]);
     }
-    public function scientistresearchgroups(Request $request)
+
+    public function createscientistresearchinterest(Request $request): View|Factory
     {
-       
-        if (Auth()->user()->ispasswordchange == 0) {
-            return redirect()->route('sientistchangepassword');
+        $info = [];
+        if (!empty($request->input('tokenid'))) {
+            $info = Researchinterest::where('userid', Auth::id())
+                ->where('id', $request->input('tokenid'))
+                ->first();
         }
+        return view('myadmin.scientists.modals.create_researchinteresthtml', [
+            'info' => $info,
+            'statusArrays' => $this->statusArrays,
+            'heading' => 'Research Interest'
+        ]);
+    }
+
+    public function scientistresearchhighlights(): View|Factory|RedirectResponse
+    {
+        if (!Auth::check()) {
+            return Redirect::route('login');
+        }
+
+        $user = Auth::user();
+        if ($user && $user->ispasswordchange == 0) {
+            return Redirect::route('sientistchangepassword');
+        }
+
+        $lists = Researchinterest::where('userid', Auth::id())
+            ->where('type', 'researchhighlights')
+            ->orderBy('sortorder', 'ASC')
+            ->paginate(50);
+
+        return view('myadmin.scientists.scientistresearchhighlightshtml', [
+            'lists' => $lists,
+            'heading' => 'Research Highlights'
+        ]);
+    }
+
+    public function createscientistresearchhighlights(Request $request): View|Factory
+    {
+        $info = [];
+        if (!empty($request->input('tokenid'))) {
+            $info = Researchinterest::where('userid', Auth::id())
+                ->where('id', $request->input('tokenid'))
+                ->first();
+        }
+        return view('myadmin.scientists.modals.create_scientistresearchhighlightshtml', [
+            'info' => $info,
+            'statusArrays' => $this->statusArrays,
+            'heading' => 'Research Highlights'
+        ]);
+    }
+
+    public function scientistresearchgroups(Request $request): View|Factory|RedirectResponse
+    {
+        if (!Auth::check()) {
+            return Redirect::route('login');
+        }
+
+        $user = Auth::user();
+        if ($user && $user->ispasswordchange == 0) {
+            return Redirect::route('sientistchangepassword');
+        }
+
         $sections = Section::where('isactive', 1)->where('type', 'researchgroup')->get();
         $scholorlists = Section::where('isactive', 1)->where('type', 'coregroupmembers')->get();
-        $corembrid = $request->query('corembrid');
-        $sectionid = $request->query('sectionid');
-        $lists = Researchgroup::join('sections', 'sections.id', '=', 'researchgroups.sectionid')->where('researchgroups.userid', Auth()->user()->id)->where('sections.type', 'researchgroup')->leftJoin('sections as corembrsection', 'corembrsection.id', '=', 'researchgroups.corembrid')
+        $corembrid = $request->input('corembrid');
+        $sectionid = $request->input('sectionid');
+        $lists = Researchgroup::join('sections', 'sections.id', '=', 'researchgroups.sectionid')
+            ->where('researchgroups.userid', Auth::id())
+            ->where('sections.type', 'researchgroup')
+            ->leftJoin('sections as corembrsection', 'corembrsection.id', '=', 'researchgroups.corembrid')
             ->select(['sections.sectionname', 'researchgroups.*', 'corembrsection.sectionname as scholarname']);
 
         if (request('sectionid')) {
@@ -332,62 +452,75 @@ class ScientistController extends Controller
 
         $lists = $lists->orderBy('sortorder', 'ASC')->paginate(50);
 
-        return view('myadmin.scientists.scientistresearchgroupshtml')
-            ->with('lists', $lists)
-            ->with('sections', $sections)
-            ->with('scholorlists', $scholorlists)
-            ->with('sectionid', $sectionid)
-            ->with('corembrid', $corembrid)
-            ->with('heading', 'Research Groups');
+        return view('myadmin.scientists.scientistresearchgroupshtml', [
+            'lists' => $lists,
+            'sections' => $sections,
+            'scholorlists' => $scholorlists,
+            'sectionid' => $sectionid,
+            'corembrid' => $corembrid,
+            'heading' => 'Research Groups'
+        ]);
     }
-    public function createscientistresearchgroups(Request $request)
+
+    public function createscientistresearchgroups(Request $request): View|Factory
     {
-        $info = array();
-        if (!empty($request->tokenid)) {
-            $info  = Researchgroup::where('userid', Auth()->user()->id)->where('id', $request->tokenid)->first();
+        $info = [];
+        if (!empty($request->input('tokenid'))) {
+            $info = Researchgroup::where('userid', Auth::id())
+                ->where('id', $request->input('tokenid'))
+                ->first();
         }
         $sections = Section::where('isactive', 1)->where('type', 'researchgroup')->get();
         $scholorlists = Section::where('isactive', 1)->where('type', 'coregroupmembers')->get();
-        return view('myadmin.scientists.modals.create_scientistresearchgroupshtml')
-            ->with('sections', $sections)
-            ->with('info', $info)
-            ->with('statusArrays', $this->statusArrays)
-            ->with('scholorlists', $scholorlists)
-            ->with('heading', 'Research Groups');
+        return view('myadmin.scientists.modals.create_scientistresearchgroupshtml', [
+            'sections' => $sections,
+            'info' => $info,
+            'statusArrays' => $this->statusArrays,
+            'scholorlists' => $scholorlists,
+            'heading' => 'Research Groups'
+        ]);
     }
-    public function scientistpublications(Request $request)
-    {
 
-        if (Auth()->user()->ispasswordchange == 0) {
-            return redirect()->route('sientistchangepassword');
+    public function scientistpublications(Request $request): View|Factory|RedirectResponse
+    {
+        if (!Auth::check()) {
+            return Redirect::route('login');
         }
+
+        $user = Auth::user();
+        if ($user && $user->ispasswordchange == 0) {
+            return Redirect::route('sientistchangepassword');
+        }
+
         $sections = Section::where('isactive', 1)->where('type', 'researchpublications')->get();
-        $lists = Researchinterest::join('sections', 'sections.id', '=', 'researchinterests.sectionid')->where('userid', Auth()->user()->id)->where('researchinterests.type', 'researchpublications')->select(['sections.sectionname', 'researchinterests.*']);
+        $lists = Researchinterest::join('sections', 'sections.id', '=', 'researchinterests.sectionid')
+            ->where('userid', Auth::id())
+            ->where('researchinterests.type', 'researchpublications')
+            ->select(['sections.sectionname', 'researchinterests.*']);
         if (request('search')) {
             $lists->where('researchinterests.title', 'LIKE', '%' . request('search') . '%');
         }
         if (request('sectionid')) {
-            $lists->where('researchinterests.sectionid', '=', $request->sectionid);
+            $lists->where('researchinterests.sectionid', '=', $request->input('sectionid'));
         }
-        $lists = $lists->orderBy('sortorder') // Order by sortorder column
-        ->paginate(100);
-        // $lists = $lists->whereNotNull('researchinterests.order')->orderBy('researchinterests.order','ASC')->paginate(50);
-        return view('myadmin.scientists.scientistpublicationshtml')
-            ->with('lists', $lists)
-            ->with('search', $request->search)
-            ->with('sectionid', $request->sectionid)
-            ->with('sections', $sections)
-            ->with('heading', 'Publications');
+        $lists = $lists->orderBy('sortorder')
+            ->paginate(100);
+
+        return view('myadmin.scientists.scientistpublicationshtml', [
+            'lists' => $lists,
+            'search' => $request->input('search'),
+            'sectionid' => $request->input('sectionid'),
+            'sections' => $sections,
+            'heading' => 'Publications'
+        ]);
     }
-    /////////////////////////////////////////////////////////////////
-    public function researchupdateOrder(Request $request)
+
+    public function researchupdateOrder(Request $request): JsonResponse
     {
         $posts = Researchinterest::all();
      
         $maxOrder = Researchinterest::max('order');
 
-        // Create the new record with the next order value
-        $attributes['order'] = $maxOrder + 1;
         foreach ($posts as $post) {
             foreach ($request->order as $order) {
                 if ($order['id'] == $post->id) {
@@ -396,24 +529,27 @@ class ScientistController extends Controller
             }
         }
 
-        return response('Update Successfully.', 200);
-    }
-    /////////////////////////////////////////////////////
-    public function createscientistpublications(Request $request)
-    {
-        $info = array();
-        if (!empty($request->tokenid)) {
-            $info  = Researchinterest::where('userid', Auth()->user()->id)->where('id', $request->tokenid)->first();
-        }
-        $sections = Section::where('isactive', 1)->where('type', 'researchpublications')->get();
-        return view('myadmin.scientists.modals.create_scientistpublicationshtml')
-            ->with('sections', $sections)
-            ->with('info', $info)
-            ->with('statusArrays', $this->statusArrays)
-            ->with('heading', 'Publications');
+        return Response::json('Update Successfully.', 200);
     }
 
-    public function updatescientistsprofile(Request $request, $userid)
+    public function createscientistpublications(Request $request): View|Factory
+    {
+        $info = [];
+        if (!empty($request->input('tokenid'))) {
+            $info = Researchinterest::where('userid', Auth::id())
+                ->where('id', $request->input('tokenid'))
+                ->first();
+        }
+        $sections = Section::where('isactive', 1)->where('type', 'researchpublications')->get();
+        return view('myadmin.scientists.modals.create_scientistpublicationshtml', [
+            'sections' => $sections,
+            'info' => $info,
+            'statusArrays' => $this->statusArrays,
+            'heading' => 'Publications'
+        ]);
+    }
+
+    public function updatescientistsprofile(Request $request, int $userid): RedirectResponse
     {
         $validator = $request->validate(
             [
@@ -425,354 +561,368 @@ class ScientistController extends Controller
                 'profilepic.required' => 'The profilepic is required',
             ]
         );
-        $userInfo  = User::find(Auth()->user()->id);
-        $httpredirect = $request->httpredirect;
+        $userInfo = User::find(Auth::id());
+        $httpredirect = $request->input('httpredirect');
         if ($userInfo) {
-            $userInfo->sirname = $request->sirname;
-            $userInfo->name = $request->name;
+            $userInfo->sirname = $request->input('sirname');
+            $userInfo->name = $request->input('name');
             $userInfo->save();
             $profilepicName = '';
-            if (!empty($request->file('profilepic'))) {
+            if ($request->hasFile('profilepic')) {
                 $profilepic = $request->file('profilepic');
                 $profilepicName = $userid . '_' . time() . '.' . $profilepic->extension();
                 $profilepic->move(public_path('userpics'), $profilepicName);
             }
             $userDetailsInfo = UserDetail::find($userid);
-            $userDetailsInfo->aboutme = $request->aboutme;
-            $userDetailsInfo->designation = $request->designation;
-            $userDetailsInfo->personalgroupinfo = $request->personalgroupinfo;
-            $userDetailsInfo->googlelink = $request->googlelink;
+            $userDetailsInfo->aboutme = $request->input('aboutme');
+            $userDetailsInfo->designation = $request->input('designation');
+            $userDetailsInfo->personalgroupinfo = $request->input('personalgroupinfo');
+            $userDetailsInfo->googlelink = $request->input('googlelink');
             if (!empty($profilepicName)) {
                 $userDetailsInfo->profilepic = $profilepicName;
             }
             $userDetailsInfo->save();
 
-            return redirect()->route($httpredirect)->with('status', ' Basic profile has been updated successfully');
+            return Redirect::route($httpredirect)->with('status', ' Basic profile has been updated successfully');
         } else {
-            return redirect()->route($httpredirect)->with('status', ' Mentioned Id does not exist');
+            return Redirect::route($httpredirect)->with('status', ' Mentioned Id does not exist');
         }
     }
-    public function deleteextrarecords(Request $request)
+
+    public function deleteextrarecords(Request $request): void
     {
-        // $itemid = $request->itemid;
-        // if($request->tag == 'researchgroups') {
-        //     Researchgroup::where('id',$itemid)->delete();
-        // } else if($request->tag == 'researchinterest') {
-        //     Researchinterest::where('id',$itemid)->delete();
-        // }
-        // return redirect()->back()->with('status', ' Removed successfully');
     }
-    public function saveOthercientistsprofile(Request $request)
+
+    public function saveOthercientistsprofile(Request $request): JsonResponse
     {
-        if (!empty($request->tokenid)) {
-            $findData = Researchinterest::find($request->tokenid);
+        if (!empty($request->input('tokenid'))) {
+            $findData = Researchinterest::find($request->input('tokenid'));
             if ($findData) {
-                $findData->title = $request->title;
-                $findData->description = $request->description;
-                $findData->type = $request->type;
-                $findData->pi = $request->pi;
-                $findData->journalname = $request->journalname;
-                $findData->journalconference = $request->journalconference;
-                $findData->bookpublisher = $request->bookpublisher;
-                $findData->copi = $request->copi;
-                $findData->amount = $request->amount;
-                $findData->tenure = $request->tenure;
-                $findData->agency = $request->agency;
-                $findData->isactive = $request->isactive;
-                $findData->volumes = $request->volumes;
-                if (!empty($request->enddate)) {
-                    $findData->enddate = convertdate($request->enddate);
+                $findData->title = $request->input('title');
+                $findData->description = $request->input('description');
+                $findData->type = $request->input('type');
+                $findData->pi = $request->input('pi');
+                $findData->journalname = $request->input('journalname');
+                $findData->journalconference = $request->input('journalconference');
+                $findData->bookpublisher = $request->input('bookpublisher');
+                $findData->copi = $request->input('copi');
+                $findData->amount = $request->input('amount');
+                $findData->tenure = $request->input('tenure');
+                $findData->agency = $request->input('agency');
+                $findData->isactive = $request->input('isactive');
+                $findData->volumes = $request->input('volumes');
+                if (!empty($request->input('enddate'))) {
+                    $findData->enddate = convertdate($request->input('enddate'));
                 }
-                $findData->sectionid = $request->sectionid;
+                $findData->sectionid = $request->input('sectionid');
                 $findData->save();
-                if (!empty($request->postdate)) {
-                    $findData->postdate = convertdate($request->postdate);
+                if (!empty($request->input('postdate'))) {
+                    $findData->postdate = convertdate($request->input('postdate'));
                 }
                 $findData->save();
-                return response()->json(array('status' => true, 'message' => 'Profile has been updated successfully'), 200);
+                return Response::json(['status' => true, 'message' => 'Profile has been updated successfully'], 200);
             } else {
-                return response()->json(array('status' => true, 'message' => 'Issue with update, refresh the page and try again'), 200);
+                return Response::json(['status' => true, 'message' => 'Issue with update, refresh the page and try again'], 200);
             }
         } else {
             $userDetailsInfo = new Researchinterest();
-            $userDetailsInfo->title = $request->title;
-            $userDetailsInfo->description = $request->description;
-            $userDetailsInfo->type = $request->type;
-            $userDetailsInfo->pi = $request->pi;
-            $userDetailsInfo->journalname = $request->journalname;
-            $userDetailsInfo->journalconference = $request->journalconference;
-            $userDetailsInfo->bookpublisher = $request->bookpublisher;
-            $userDetailsInfo->copi = $request->copi;
-            $userDetailsInfo->amount = $request->amount;
-            $userDetailsInfo->tenure = $request->tenure;
-            $userDetailsInfo->agency = $request->agency;
-            $userDetailsInfo->isactive = $request->isactive;
-            $userId = Auth()->user()->id;
-            $getdata = Researchinterest::where('type',$request->type)->where('userid',$userId)->where('sectionid',$request->sectionid)->get();
-            // print_r($getdata)); die;
-            if(!empty($getdata))
-            {
-                $last = Researchinterest::where('type',$request->type)->where('userid',$userId)->where('sectionid',$request->sectionid)->orderBy('sortorder','DESC')->first();
+            $userDetailsInfo->title = $request->input('title');
+            $userDetailsInfo->description = $request->input('description');
+            $userDetailsInfo->type = $request->input('type');
+            $userDetailsInfo->pi = $request->input('pi');
+            $userDetailsInfo->journalname = $request->input('journalname');
+            $userDetailsInfo->journalconference = $request->input('journalconference');
+            $userDetailsInfo->bookpublisher = $request->input('bookpublisher');
+            $userDetailsInfo->copi = $request->input('copi');
+            $userDetailsInfo->amount = $request->input('amount');
+            $userDetailsInfo->tenure = $request->input('tenure');
+            $userDetailsInfo->agency = $request->input('agency');
+            $userDetailsInfo->isactive = $request->input('isactive');
+            $userId = Auth::id();
+            $getdata = Researchinterest::where('type', $request->input('type'))
+                ->where('userid', $userId)
+                ->where('sectionid', $request->input('sectionid'))
+                ->get();
+            
+            if(!$getdata->isEmpty()) {
+                $last = Researchinterest::where('type', $request->input('type'))
+                    ->where('userid', $userId)
+                    ->where('sectionid', $request->input('sectionid'))
+                    ->orderBy('sortorder', 'DESC')
+                    ->first();
                 $order = isset($last->sortorder) ? $last->sortorder : 0;
-                // dd($order);
-              
                 $userDetailsInfo->sortorder = $order + 1;
-
-            }else{
+            } else {
                 $userDetailsInfo->sortorder = 1;
-
             }
              
-            $userDetailsInfo->isactive = $request->isactive;
-
-
-            $userDetailsInfo->volumes = $request->volumes;
-            if (!empty($request->enddate)) {
-                $userDetailsInfo->enddate = convertdate($request->enddate);
+            $userDetailsInfo->isactive = $request->input('isactive');
+            $userDetailsInfo->volumes = $request->input('volumes');
+            if (!empty($request->input('enddate'))) {
+                $userDetailsInfo->enddate = convertdate($request->input('enddate'));
             }
-            $userDetailsInfo->sectionid = $request->sectionid;
-            $userDetailsInfo->userid = Auth()->user()->id;
+            $userDetailsInfo->sectionid = $request->input('sectionid');
+            $userDetailsInfo->userid = Auth::id();
             $userDetailsInfo->save();
         }
-        return response()->json(array('status' => true, 'message' => 'Profile has been saved successfully'), 200);
-        //return redirect()->route($request->httpredirect)->with('status', ' Content has been updated successfully');
+        return Response::json(['status' => true, 'message' => 'Profile has been saved successfully'], 200);
     }
-    public function dropzoneImagesStore(Request $request)
-    {
 
+    public function dropzoneImagesStore(Request $request): JsonResponse
+    {
         $imagelists = $request->file('file');
-        $size = sizeof($imagelists);
-        $params = array();
+        if (!is_array($imagelists)) {
+            $imagelists = [$imagelists];
+        }
+        
         foreach ($imagelists as $key => $imagelist) {
             $imageName = $key . '_' . uniqid() . '.' . $imagelist->extension();
             $imagelist->move(public_path('userpics'), $imageName);
             $userDetailsInfo = new Researchinterest();
-            $userDetailsInfo->type = $request->type;
+            $userDetailsInfo->type = $request->input('type');
             $userDetailsInfo->description = $imageName;
-            $userDetailsInfo->userid = Auth()->user()->id;
+            $userDetailsInfo->userid = Auth::id();
             $userDetailsInfo->save();
         }
-        return response()->json(["status" => "success", "data" => 'Content has been updated successfully']);
+        return Response::json(['status' => 'success', 'data' => 'Content has been updated successfully']);
     }
-    public function savescientistresearchgroup(Request $request)
+
+    public function savescientistresearchgroup(Request $request): JsonResponse
     {
-        if (!empty($request->tokenid)) {
-            $findData = Researchgroup::find($request->tokenid);
+        if (!empty($request->input('tokenid'))) {
+            $findData = Researchgroup::find($request->input('tokenid'));
             if ($findData) {
-                $findData->name = $request->name;
-                $findData->email = $request->email;
-                $findData->isactive = $request->isactive;
-                $findData->regno = $request->regno;
-                $findData->presentaffiliation = $request->presentaffiliation;
-                if (!empty($request->enddate)) {
-                    $findData->enddate = convertdate($request->enddate);
+                $findData->name = $request->input('name');
+                $findData->email = $request->input('email');
+                $findData->isactive = $request->input('isactive');
+                $findData->regno = $request->input('regno');
+                $findData->presentaffiliation = $request->input('presentaffiliation');
+                if (!empty($request->input('enddate'))) {
+                    $findData->enddate = convertdate($request->input('enddate'));
                 }
-                if (!empty($request->workingsince)) {
-                    $findData->workingsince = convertdate($request->workingsince);
+                if (!empty($request->input('workingsince'))) {
+                    $findData->workingsince = convertdate($request->input('workingsince'));
                 }
-                $findData->corembrid = $request->corembrid;
-                $findData->sectionid = $request->sectionid;
+                $findData->corembrid = $request->input('corembrid');
+                $findData->sectionid = $request->input('sectionid');
                 $interimageName = '';
-                if (!empty($request->file('interimage'))) {
+                if ($request->hasFile('interimage')) {
                     $interimage = $request->file('interimage');
-                    $interimageName = Auth()->user()->id . '_' . time() . '.' . $interimage->extension();
-                    $interimage->move(public_path('userpics'), $interimageName);
+                    if ($interimage instanceof \Illuminate\Http\UploadedFile) {
+                        $interimageName = Auth::id() . '_' . time() . '.' . $interimage->getClientOriginalExtension();
+                        $interimage->move(public_path('userpics'), $interimageName);
+                    }
                 }
                 if (!empty($interimageName)) {
                     $findData->interimage = $interimageName;
                 }
                 $findData->save();
-                return response()->json(array('status' => true, 'message' => 'Content has been updated successfully'), 200);
+                return Response::json(['status' => true, 'message' => 'Content has been updated successfully'], 200);
             } else {
-                return response()->json(array('status' => true, 'message' => 'Issue with update, refresh the page and try again'), 200);
+                return Response::json(['status' => true, 'message' => 'Issue with update, refresh the page and try again'], 200);
             }
         } else {
-
             $userDetailsInfo = new Researchgroup();
-            $userDetailsInfo->name = $request->name;
-            $userDetailsInfo->email = $request->email;
-            $userDetailsInfo->isactive = $request->isactive;
-            $userDetailsInfo->regno = $request->regno;
-            $userDetailsInfo->presentaffiliation = $request->presentaffiliation;
-            if (!empty($request->workingsince)) {
-                $userDetailsInfo->workingsince = convertdate($request->workingsince);
+            $userDetailsInfo->name = $request->input('name');
+            $userDetailsInfo->email = $request->input('email');
+            $userDetailsInfo->isactive = $request->input('isactive');
+            $userDetailsInfo->regno = $request->input('regno');
+            $userDetailsInfo->presentaffiliation = $request->input('presentaffiliation');
+            if (!empty($request->input('workingsince'))) {
+                $userDetailsInfo->workingsince = convertdate($request->input('workingsince'));
             }
-            if (!empty($request->enddate)) {
-                $userDetailsInfo->enddate = convertdate($request->enddate);
+            if (!empty($request->input('enddate'))) {
+                $userDetailsInfo->enddate = convertdate($request->input('enddate'));
             }
-            $userDetailsInfo->corembrid = $request->corembrid;
-            $userDetailsInfo->sectionid = $request->sectionid;
+            $userDetailsInfo->corembrid = $request->input('corembrid');
+            $userDetailsInfo->sectionid = $request->input('sectionid');
 
             $interimageName = '';
-            if (!empty($request->file('interimage'))) {
+            if ($request->hasFile('interimage')) {
                 $interimage = $request->file('interimage');
-                $interimageName = Auth()->user()->id . '_' . time() . '.' . $interimage->extension();
-                $interimage->move(public_path('userpics'), $interimageName);
+                if ($interimage instanceof \Illuminate\Http\UploadedFile) {
+                    $interimageName = Auth::id() . '_' . time() . '.' . $interimage->getClientOriginalExtension();
+                    $interimage->move(public_path('userpics'), $interimageName);
+                }
             }
-            $userDetailsInfo->userid = Auth()->user()->id;
+            $userDetailsInfo->userid = Auth::id();
             if (!empty($interimageName)) {
                 $userDetailsInfo->interimage = $interimageName;
             }
             $userDetailsInfo->save();
-            return response()->json(array('status' => true, 'message' => 'Content has been saved successfully'), 200);
+            return Response::json(['status' => true, 'message' => 'Content has been saved successfully'], 200);
         }
     }
 
-    public function savescientistresearchgroupByAdmin(Request $request)
+    public function savescientistresearchgroupByAdmin(Request $request): RedirectResponse
     {
-        if (!empty($request->tokenid)) {
-            $findData = Researchgroup::find($request->tokenid);
+        if (!empty($request->input('tokenid'))) {
+            $findData = Researchgroup::find($request->input('tokenid'));
             if ($findData) {
-                $findData->name = $request->name;
-                $findData->email = $request->email;
-                $findData->regno = $request->regno;
-                $findData->userid = $request->userid;
-                $findData->isactive = $request->isactive;
-                $findData->personalemail = $request->personalemail;
-                $findData->presentaffiliation = $request->presentaffiliation;
-                // if (!empty($request->enddate)) {
-                //     $findData->enddate = convertdate($request->enddate);
-                // }
-                // dd($request->enddate);
-                $findData->enddate = $request->enddate != '' ? convertdate($request->enddate) : NULL;
-
-                // if (!empty($request->workingsince)) {
-                    $findData->workingsince = $request->workingsince != '' ? convertdate($request->workingsince) : NULL;
-                // }
-                $findData->corembrid = $request->corembrid;
-                $findData->sectionid = $request->sectionid;
+                $findData->name = $request->input('name');
+                $findData->email = $request->input('email');
+                $findData->regno = $request->input('regno');
+                $findData->userid = $request->input('userid');
+                $findData->isactive = $request->input('isactive');
+                $findData->personalemail = $request->input('personalemail');
+                $findData->presentaffiliation = $request->input('presentaffiliation');
+                $findData->enddate = $request->input('enddate') != '' ? convertdate($request->input('enddate')) : NULL;
+                $findData->workingsince = $request->input('workingsince') != '' ? convertdate($request->input('workingsince')) : NULL;
+                $findData->corembrid = $request->input('corembrid');
+                $findData->sectionid = $request->input('sectionid');
                 $interimageName = '';
-                if (!empty($request->file('interimage'))) {
+                if ($request->hasFile('interimage')) {
                     $interimage = $request->file('interimage');
-                    $interimageName = $request->userid . '_' . time() . '.' . $interimage->extension();
-                    $interimage->move(public_path('userpics'), $interimageName);
+                    if ($interimage instanceof \Illuminate\Http\UploadedFile) {
+                        $interimageName = $request->input('userid') . '_' . time() . '.' . $interimage->getClientOriginalExtension();
+                        $interimage->move(public_path('userpics'), $interimageName);
+                    }
                 }
                 if (!empty($interimageName)) {
                     $findData->interimage = $interimageName;
                 }
                 $findData->save();
-                return redirect()->route('students')->with('status', ' Content has been saved successfully');
+                return Redirect::route('students')->with('status', ' Content has been saved successfully');
             } else {
-                return response()->json(array('status' => true, 'message' => 'Issue with update, refresh the page and try again'), 200);
+                return Response::json(['status' => true, 'message' => 'Issue with update, refresh the page and try again'], 200);
             }
         } else {
             $userDetailsInfo = new Researchgroup();
-            $userDetailsInfo->customname = $request->customname;
-            $userDetailsInfo->name = $request->name;
-            $userDetailsInfo->email = $request->email;
-            $userDetailsInfo->regno = $request->regno;
-            $userDetailsInfo->personalemail = $request->personalemail;
-            $userDetailsInfo->presentaffiliation = $request->presentaffiliation;
-            // if (!empty($request->workingsince)) {
-                $userDetailsInfo->workingsince = $request->workingsince != '' ? convertdate($request->workingsince) : NULL;
-            // }
-            // if (!empty($request->enddate)) {
-                $userDetailsInfo->enddate = $request->enddate != '' ? convertdate($request->enddate) : NULL;
-            // }
-            $userDetailsInfo->corembrid = $request->corembrid;
-            $userDetailsInfo->sectionid = $request->sectionid;
+            $userDetailsInfo->customname = $request->input('customname');
+            $userDetailsInfo->name = $request->input('name');
+            $userDetailsInfo->email = $request->input('email');
+            $userDetailsInfo->regno = $request->input('regno');
+            $userDetailsInfo->personalemail = $request->input('personalemail');
+            $userDetailsInfo->presentaffiliation = $request->input('presentaffiliation');
+            $userDetailsInfo->workingsince = $request->input('workingsince') != '' ? convertdate($request->input('workingsince')) : NULL;
+            $userDetailsInfo->enddate = $request->input('enddate') != '' ? convertdate($request->input('enddate')) : NULL;
+            $userDetailsInfo->corembrid = $request->input('corembrid');
+            $userDetailsInfo->sectionid = $request->input('sectionid');
 
             $interimageName = '';
-            if (!empty($request->file('interimage'))) {
+            if ($request->hasFile('interimage')) {
                 $interimage = $request->file('interimage');
-                $interimageName = $request->userid . '_' . time() . '.' . $interimage->extension();
-                $interimage->move(public_path('userpics'), $interimageName);
+                if ($interimage instanceof \Illuminate\Http\UploadedFile) {
+                    $interimageName = $request->input('userid') . '_' . time() . '.' . $interimage->getClientOriginalExtension();
+                    $interimage->move(public_path('userpics'), $interimageName);
+                }
             }
-            $userDetailsInfo->userid = $request->userid;
+            $userDetailsInfo->userid = $request->input('userid');
             if (!empty($interimageName)) {
                 $userDetailsInfo->interimage = $interimageName;
             }
             $userDetailsInfo->save();
-            return redirect()->route('students')->with('status', ' Content has been saved successfully');
+            return Redirect::route('students')->with('status', ' Content has been saved successfully');
         }
     }
 
-    public function biodataresearchespawards(Request $request)
+    public function biodataresearchespawards(Request $request): View|Factory|RedirectResponse
     {
-        if (Auth()->user()->ispasswordchange == 0) {
-            return redirect()->route('sientistchangepassword');
+        if (!Auth::check()) {
+            return Redirect::route('login');
         }
-        $sectionid = $request->sectionid;
+
+        $user = Auth::user();
+        if ($user && $user->ispasswordchange == 0) {
+            return Redirect::route('sientistchangepassword');
+        }
+
+        $sectionid = $request->input('sectionid');
      
-        $lists = Researchinterest::join('sections', 'sections.id', '=', 'researchinterests.sectionid')->where(['userid' => Auth()->user()->id, 'researchinterests.type' => 'researchbiodata', 'researchinterests.sectionid' => $sectionid])->select(['sections.sectionname', 'researchinterests.*']);
+        $lists = Researchinterest::join('sections', 'sections.id', '=', 'researchinterests.sectionid')
+            ->where(['userid' => Auth::id(), 'researchinterests.type' => 'researchbiodata', 'researchinterests.sectionid' => $sectionid])
+            ->select(['sections.sectionname', 'researchinterests.*']);
         if (request('search')) {
             $lists->where('researchinterests.description', 'LIKE', '%' . request('search') . '%');
         }
         $lists = $lists->orderBy('sortorder', 'ASC')->paginate(50);
         // dd($lists); 
-        return view('myadmin.scientists.researchbiodataawardshtml')
-            ->with('lists', $lists)
-            ->with('sectionid', $sectionid)
-            ->with('search', request('search'))
-            ->with('heading', ($sectionid == 10 ? 'Research Experience' : 'Awards & Honours'));
+        return view('myadmin.scientists.researchbiodataawardshtml', [
+            'lists' => $lists,
+            'sectionid' => $sectionid,
+            'search' => request('search'),
+            'heading' => ($sectionid == 10 ? 'Research Experience' : 'Awards & Honours')
+        ]);
     }
-    public function createbiodataresearchespawards(Request $request)
+
+    public function createbiodataresearchespawards(Request $request): View|Factory
     {
-        $info = array();
-        if (!empty($request->tokenid) && !empty($request->sectionid)) {
-            $info  = Researchinterest::where([
-                'userid' => Auth()->user()->id,
-                'id' => $request->tokenid,
-                'sectionid' => $request->sectionid,
+        $info = [];
+        if (!empty($request->input('tokenid')) && !empty($request->input('sectionid'))) {
+            $info = Researchinterest::where([
+                'userid' => Auth::id(),
+                'id' => $request->input('tokenid'),
+                'sectionid' => $request->input('sectionid'),
             ])->first();
         }
-        return view('myadmin.scientists.modals.create_researchbiodataawardshtml')
-            ->with('info', $info)
-            ->with('sectionid', $request->sectionid)
-            ->with('statusArrays', $this->statusArrays)
-            ->with('heading', ($request->sectionid == 10 ? 'Research Experience' : 'Awards & Honours'));
+        return view('myadmin.scientists.modals.create_researchbiodataawardshtml', [
+            'info' => $info,
+            'sectionid' => $request->input('sectionid'),
+            'statusArrays' => $this->statusArrays,
+            'heading' => ($request->input('sectionid') == 10 ? 'Research Experience' : 'Awards & Honours')
+        ]);
     }
-    public function biodataresearchegrant(Request $request)
+
+    public function biodataresearchegrant(Request $request): View|Factory|RedirectResponse
     {
-        if (Auth()->user()->ispasswordchange == 0) {
-            return redirect()->route('sientistchangepassword');
+        if (!Auth::check()) {
+            return Redirect::route('login');
         }
-        $lists = Researchinterest::join('sections', 'sections.id', '=', 'researchinterests.sectionid')->where(['userid' => Auth()->user()->id, 'researchinterests.type' => 'researchbiodata', 'researchinterests.sectionid' => $this->GrantSectionId])->select(['sections.sectionname', 'researchinterests.*']);
+
+        $user = Auth::user();
+        if ($user && $user->ispasswordchange == 0) {
+            return Redirect::route('sientistchangepassword');
+        }
+
+        $lists = Researchinterest::join('sections', 'sections.id', '=', 'researchinterests.sectionid')
+            ->where(['userid' => Auth::id(), 'researchinterests.type' => 'researchbiodata', 'researchinterests.sectionid' => $this->GrantSectionId])
+            ->select(['sections.sectionname', 'researchinterests.*']);
         if (request('search')) {
             $lists->where('researchinterests.description', 'LIKE', '%' . request('search') . '%');
         }
         $lists = $lists->orderBy('sortorder', 'ASC')->paginate(50);
-        return view('myadmin.scientists.biodataresearchegranthtml')
-            ->with('lists', $lists)
-            ->with('search', request('search'))
-            ->with('heading', 'Research Grants Secured');
+        return view('myadmin.scientists.biodataresearchegranthtml', [
+            'lists' => $lists,
+            'search' => request('search'),
+            'heading' => 'Research Grants Secured'
+        ]);
     }
-    public function createbiodataresearchegrant(Request $request)
+
+    public function createbiodataresearchegrant(Request $request): View|Factory
     {
-        $info = array();
-        if (!empty($request->tokenid)) {
-            $info  = Researchinterest::where([
-                'userid' => Auth()->user()->id,
-                'id' => $request->tokenid,
+        $info = [];
+        if (!empty($request->input('tokenid'))) {
+            $info = Researchinterest::where([
+                'userid' => Auth::id(),
+                'id' => $request->input('tokenid'),
                 'sectionid' => $this->GrantSectionId,
             ])->first();
         }
-        return view('myadmin.scientists.modals.create_biodataresearchegranthtml')
-            ->with('info', $info)
-            ->with('statusArrays', $this->statusArrays)
-            ->with('sectionid', $this->GrantSectionId)
-            ->with('heading', 'Research Grants Secured');
+        return view('myadmin.scientists.modals.create_biodataresearchegranthtml', [
+            'info' => $info,
+            'statusArrays' => $this->statusArrays,
+            'sectionid' => $this->GrantSectionId,
+            'heading' => 'Research Grants Secured'
+        ]);
     }
 
-    public function scientistUpdateOrder(Request $request)
-	{
-
-		$orders = $request->input('order');
+    public function scientistUpdateOrder(Request $request): JsonResponse
+    {
+        $orders = $request->input('order');
 	
-		foreach ($orders as $order) {
+        foreach ($orders as $order) {
+            $id = $order['id'];
+            $position = $order['position'];
+            $type = $order['type'];
 
-			$id = $order['id'];
-			$position = $order['position'];
-			$type = $order['type'];
-
-			$list = Researchinterest::where('id', $id)->where('type', $type)
-				->firstOrFail();
+            $list = Researchinterest::where('id', $id)->where('type', $type)
+                ->firstOrFail();
                 
-			$list->sortorder = $position;
-			$list->save();
-		}
+            $list->sortorder = $position;
+            $list->save();
+        }
 		// die;
 
-		return response()->json(['status' => 'success']);
-	}
+        return Response::json(['status' => 'success']);
+    }
 }

@@ -6,6 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
+
+ * 
+ * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
+ *
+ * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
+ *
+ * 
+ * 
  * @property mixed $id
  * @property  mixed $title_en
  * @property mixed $title_hi
@@ -20,11 +28,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property mixed $agency
  * @property mixed $volumes
  * @property mixed $userid
- * 
- * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
- * 
- * 
+ *
  */
+
+
 class Banner extends Model
 {
     use HasFactory;

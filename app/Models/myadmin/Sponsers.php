@@ -8,6 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 
 
 	/**
+     * 
+     * 
+     *  @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
+ *
+ * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
+ * 
+ * 
  * @property mixed $isactive
  * @property mixed $title_en
  * @property mixed $title_hi
@@ -15,7 +22,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property mixed $image_file
  * @property mixed $sponser_category
  * 
- * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
+ *
  */
 class Sponsers extends Model
 {

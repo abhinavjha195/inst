@@ -13,10 +13,18 @@ use Illuminate\Database\Eloquent\Model;
  * @property mixed $type
  * @property mixed $user_id
  * @property mixed $page_id
+ * @property mixed $sortorder
+ *  @property mixed $pageid
  * 
  * 
  * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
+ * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
  */
+
+
+
+ 
+
 
 class Quicklink extends Model
 {

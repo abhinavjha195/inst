@@ -21,38 +21,54 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Contracts\View\Factory;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Database\Eloquent\Collection;
 
 
 class TeamController extends Controller {
 
 
-   /**
+  /**
      * @var array<string, string>
      */
     protected array $statusArrays;
 
     /**
-     * @var Collection<int, category>
+     * @var Collection<int, Section>
      */
     protected Collection $catlists;
+
+
+      /**
+     * @var string[]
+     */
+    protected array $roles;
+
+
+      /**
+     * @var int
+     */
+    protected int $GrantSectionId;
+
 
     public function __construct()
     {
         $this->statusArrays = ['' => 'Status', 'inactive' => 'inActive', 'active' => 'Active'];
-
-        $this->roles = 'scientists';
+        $this->roles = ['scientists'];
         $this->GrantSectionId = 12;
+        $this->catlists = Section::where('isactive', 1)->get();
     }
 
 
    
-	public function scientistimagesAdmin(Request $request): View|Factory {
-		$token =  Crypt::decrypt($request->query('_token'));
-		$userInfo  = User::find($token);
-		if( empty($userInfo) ) {
-			return Redirect::route('scientists');
+	public function scientistimagesAdmin(Request $request): View|Factory|RedirectResponse {
+		$token = $request->query('_token');
+		if (!is_string($token)) {
+			return Redirect::route('scientists')->with('error', 'Invalid token');
 		}
-        $lists  = Researchinterest::where('userid', $token)->where('type','relatedimages')->orderBy('id', 'DESC')->get();
+		$decryptedToken = Crypt::decrypt($token);
+		$userInfo = User::findOrFail($decryptedToken);
+        $lists  = Researchinterest::where('userid', $decryptedToken)->where('type','relatedimages')->orderBy('id', 'DESC')->get();
         return view('myadmin.scientistsadmin.scientistimageshtml', [
             'lists' => $lists,
             'userInfo' => $userInfo,
@@ -61,24 +77,37 @@ class TeamController extends Controller {
     }
 	public function dropzoneImagesStoreAdmin(Request $request): JsonResponse {
         $imagelists = $request->file('file');
-        $size = sizeof($imagelists);
+        $size = is_array($imagelists) ? count($imagelists) : 1;
         $params = array();
-        foreach( $imagelists as $key=>$imagelist ) {
-            $imageName = $key.'_'.uniqid().'.'.$imagelist->extension();
-            $imagelist->move(public_path('userpics'),$imageName);
-            $userDetailsInfo = new Researchinterest();
-            $userDetailsInfo->type = $request->type;
-            $userDetailsInfo->description = $imageName;
-            $userDetailsInfo->userid = $request->userid;
-            $userDetailsInfo->save();
+        
+        if (is_array($imagelists)) {
+            foreach ($imagelists as $key => $imagelist) {
+                $this->processImage($imagelist, $key, $request);
+            }
+        } elseif ($imagelists instanceof UploadedFile) {
+            $this->processImage($imagelists, 0, $request);
         }
+        
         return Response::json(["status" => "success", "data" => 'Content has been updated successfully']);
     }
+
+    private function processImage(UploadedFile $image, int $key, Request $request): void {
+        $imageName = $key.'_'.uniqid().'.'.$image->getClientOriginalExtension();
+        $image->move(public_path('userpics'), $imageName);
+        $userDetailsInfo = new Researchinterest();
+        $userDetailsInfo->type = $request->input('type');
+        $userDetailsInfo->description = $imageName;
+        $userDetailsInfo->userid = $request->input('userid');
+        $userDetailsInfo->save();
+    }
+
 	public function destroy(Request $request, int $id): RedirectResponse {
 		if($request->input('tag') == 'researchgroups') {
             $info  = Researchgroup::where('userid', $request->input('userid'))->where('id',$id)->first();
             if ($info && $info->interimage != "") {
-                File::delete(public_path('userpics') .'/'. $info->interimage);
+                if (File::exists(public_path('userpics') . '/' . $info->interimage)) {
+                    File::delete(public_path('userpics') . '/' . $info->interimage);
+                }
             }
 			Researchgroup::where('id',$id)->delete();
         } else if($request->input('tag') == 'researchinterest') {
@@ -86,85 +115,104 @@ class TeamController extends Controller {
         } else if($request->input('tag') == 'relatedimages') {
             $info  = Researchinterest::where('userid', $request->input('userid'))->where('id',$id)->where('type','relatedimages')->first();
             if ($info && $info->description != "") {
-                File::delete(public_path('userpics') .'/'. $info->description);
+                if (File::exists(public_path('userpics') . '/' . $info->description)) {
+                    File::delete(public_path('userpics') . '/' . $info->description);
+                }
             }
 			Researchinterest::where('id', $id)->delete();			
         }
         return Redirect::back()->with('status', ' Content has been removed successfully');
     }
-	public function scientistresearchinterestAdmin(Request $request): View|Factory {
-		$token =  Crypt::decrypt($request->query('_token'));
-		$userInfo  = User::find($token);
-		if( empty($userInfo) ) {
-			return Redirect::route('scientists');
-		}
-        $lists  = Researchinterest::where('userid', $token)->where('type','researchinterest')->orderBy('id', 'DESC')->paginate(100);
-        return view('myadmin.scientistsadmin.researchinteresthtml', [
-            'lists' => $lists,
-            'userInfo' => $userInfo,
-            'heading' => 'Research Interest'
-        ]);
+	public function scientistresearchinterestAdmin(Request $request): View|Factory|RedirectResponse {
+    $token = $request->query('_token');
+    
+    if (!is_string($token)) {
+        return Redirect::route('scientists')->with('error', 'Invalid token');
     }
-	public function createscientistresearchinterestAdmin(Request $request): View|Factory {
-		$token =  Crypt::decrypt($request->query('_token'));
-		$userInfo  = User::find($token);
-		if( empty($userInfo) ) {
-			return Redirect::route('scientists');
+
+    try {
+        $decryptedToken = Crypt::decrypt($token);
+    } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+        return Redirect::route('scientists')->with('error', 'Invalid token');
+    }
+
+    $userInfo = User::find($decryptedToken);
+    
+    if (empty($userInfo)) {
+        return Redirect::route('scientists');
+    }
+
+    $lists  = Researchinterest::where('userid', $decryptedToken)->where('type','researchinterest')->orderBy('id', 'DESC')->paginate(100);
+    return view('myadmin.scientistsadmin.researchinteresthtml', [
+        'lists' => $lists,
+        'userInfo' => $userInfo,
+        'heading' => 'Research Interest'
+    ]);
+}
+	public function createscientistresearchinterestAdmin(Request $request): View|Factory|RedirectResponse {
+		$token = $request->query('_token');
+		if (!is_string($token)) {
+			return Redirect::route('scientists')->with('error', 'Invalid token');
 		}
+		$decryptedToken = Crypt::decrypt($token);
+		$userInfo = User::findOrFail($decryptedToken);
 		
         $info = [];
         if( !empty($request->input('tokenid')) ) {
-            $info  = Researchinterest::where('userid', $token)->where('id',$request->input('tokenid'))->first();
+            $info  = Researchinterest::where('userid', $decryptedToken)->where('id',$request->input('tokenid'))->first();
         }
 		return view('myadmin.scientistsadmin.modals.create_researchinteresthtml', [
             'info' => $info,
-            'token' => $token,
+            'token' => $decryptedToken,
             'heading' => 'Research Interest'
         ]);
     }
-	public function scientistresearchhighlightsAdmin(Request $request): View|Factory {
-		$token =  Crypt::decrypt($request->query('_token'));
-		$userInfo  = User::find($token);
-		if( empty($userInfo) ) {
-			return Redirect::route('scientists');
+	public function scientistresearchhighlightsAdmin(Request $request): View|Factory|RedirectResponse {
+		$token = $request->query('_token');
+		if (!is_string($token)) {
+			return Redirect::route('scientists')->with('error', 'Invalid token');
 		}
-        $lists  = Researchinterest::where('userid', $token)->where('type','researchhighlights')->orderBy('sortorder', 'ASC')->paginate(100);
+		$decryptedToken = Crypt::decrypt($token);
+		$userInfo = User::findOrFail($decryptedToken);
+        $lists  = Researchinterest::where('userid', $decryptedToken)->where('type','researchhighlights')->orderBy('sortorder', 'ASC')->paginate(100);
         return view('myadmin.scientistsadmin.scientistresearchhighlightshtml', [
             'lists' => $lists,
             'userInfo' => $userInfo,
             'heading' => 'Research Highlights'
         ]);
     }
-    public function createscientistresearchhighlightsAdmin(Request $request): View|Factory {
-        $token =  Crypt::decrypt($request->query('_token'));
-		$userInfo  = User::find($token);
-		if( empty($userInfo) ) {
-			return Redirect::route('scientists');
+    public function createscientistresearchhighlightsAdmin(Request $request): View|Factory|RedirectResponse {
+        $token = $request->query('_token');
+		if (!is_string($token)) {
+			return Redirect::route('scientists')->with('error', 'Invalid token');
 		}
+		$decryptedToken = Crypt::decrypt($token);
+		$userInfo = User::findOrFail($decryptedToken);
 		
 		$info = [];
         if( !empty($request->input('tokenid')) ) {
-            $info  = Researchinterest::where('userid', $token)->where('id',$request->input('tokenid'))->first();
+            $info  = Researchinterest::where('userid', $decryptedToken)->where('id',$request->input('tokenid'))->first();
         }
 		return view('myadmin.scientistsadmin.modals.create_scientistresearchhighlightshtml', [
             'info' => $info,
-            'token' => $token,
+            'token' => $decryptedToken,
             'heading' => 'Research Highlights'
         ]);
     }
-	public function scientistresearchgroupsAdmin(Request $request): View|Factory {
+	public function scientistresearchgroupsAdmin(Request $request): View|Factory|RedirectResponse {
       
-		$token =  Crypt::decrypt($request->query('_token'));
-		$userInfo  = User::find($token);
-		if( empty($userInfo) ) {
-			return Redirect::route('scientists');
+		$token = $request->query('_token');
+		if (!is_string($token)) {
+			return Redirect::route('scientists')->with('error', 'Invalid token');
 		}
+		$decryptedToken = Crypt::decrypt($token);
+		$userInfo = User::findOrFail($decryptedToken);
         $sections = Section::where('isactive',1)->where('type','researchgroup')->get();
         $scholorlists = Section::where('isactive',1)->where('type','coregroupmembers')->get();
         $corembrid = $request->query('corembrid');
         $sectionid = $request->query('sectionid');
         $search = $request->query('search');
-        $lists = Researchgroup::join('sections','sections.id','=','researchgroups.sectionid')->where('researchgroups.userid', $token)->where('sections.type','researchgroup')->leftJoin('sections as corembrsection','corembrsection.id','=','researchgroups.corembrid')
+        $lists = Researchgroup::join('sections','sections.id','=','researchgroups.sectionid')->where('researchgroups.userid', $decryptedToken)->where('sections.type','researchgroup')->leftJoin('sections as corembrsection','corembrsection.id','=','researchgroups.corembrid')
         ->select(['sections.sectionname', 'researchgroups.*','corembrsection.sectionname as scholarname']);
         
         if ($request->filled('sectionid')) {
@@ -194,31 +242,35 @@ class TeamController extends Controller {
             'heading' => 'Research Groups'
         ]);
     }
-    public function createscientistresearchgroupsAdmin(Request $request): View|Factory {
-        $token =  Crypt::decrypt($request->query('_token'));
-		$userInfo  = User::find($token);
-		if( empty($userInfo) ) {
-			return Redirect::route('scientists');
+    public function createscientistresearchgroupsAdmin(Request $request): View|Factory|RedirectResponse {
+        $token = $request->query('_token');
+		if (!is_string($token)) {
+			return Redirect::route('scientists')->with('error', 'Invalid token');
 		}
+		$decryptedToken = Crypt::decrypt($token);
+		$userInfo = User::findOrFail($decryptedToken);
 		
 		$info = [];
         if( !empty($request->input('tokenid')) ) {
-            $info  = Researchgroup::where('userid', $token)->where('id',$request->input('tokenid'))->first();
+            $info  = Researchgroup::where('userid', $decryptedToken)->where('id',$request->input('tokenid'))->first();
         }
         $sections = Section::where('isactive',1)->where('type','researchgroup')->get();
         $scholorlists = Section::where('isactive',1)->where('type','coregroupmembers')->get();
 		return view('myadmin.scientistsadmin.modals.create_scientistresearchgroupshtml', [
             'sections' => $sections,
             'info' => $info,
-            'token' => $token,
+            'token' => $decryptedToken,
             'scholorlists' => $scholorlists,
             'heading' => 'Research Groups'
         ]);
     }
-	public function scientistpublicationsAdmin(Request $request): View|Factory {
+	public function scientistpublicationsAdmin(Request $request): View|Factory|RedirectResponse {
 
-		$token =  Crypt::decrypt($request->query('_token'));
-       
+		$token = $request->query('_token');
+		if (!is_string($token)) {
+			return Redirect::route('scientists')->with('error', 'Invalid token');
+		}
+		$decryptedToken = Crypt::decrypt($token);
 
         $yearlists = Researchgroup::whereNotIn('workingsince', [0, 1970])->orderBy('workingsince', 'desc')->select('workingsince')->groupBy('workingsince')->distinct()->get();
 		$years = array();
@@ -230,9 +282,9 @@ class TeamController extends Controller {
 		$years = array_unique($years, SORT_REGULAR);
 
 
-		$userInfo  = User::find($token);
+		$userInfo = User::findOrFail($decryptedToken);
         $sections = Section::where('isactive',1)->where('type','researchpublications')->get();
-        $lists = Researchinterest::join('sections','sections.id','=','researchinterests.sectionid')->where('userid', $token)->where('researchinterests.type','researchpublications')->select(['sections.sectionname', 'researchinterests.*']);
+        $lists = Researchinterest::join('sections','sections.id','=','researchinterests.sectionid')->where('userid', $decryptedToken)->where('researchinterests.type','researchpublications')->select(['sections.sectionname', 'researchinterests.*']);
         if($request->filled('search')) {
 			$lists->where('researchinterests.title','LIKE','%'.$request->input('search').'%');
 		}
@@ -256,34 +308,36 @@ class TeamController extends Controller {
             'heading' => 'Publications'
         ]);
     }
-    public function createscientistpublicationsAdmin(Request $request): View|Factory {
-        $token =  Crypt::decrypt($request->query('_token'));
-		$userInfo  = User::find($token);
-		if( empty($userInfo) ) {
-			return Redirect::route('scientists');
+    public function createscientistpublicationsAdmin(Request $request): View|Factory|RedirectResponse {
+        $token = $request->query('_token');
+		if (!is_string($token)) {
+			return Redirect::route('scientists')->with('error', 'Invalid token');
 		}
+		$decryptedToken = Crypt::decrypt($token);
+		$userInfo = User::findOrFail($decryptedToken);
 		
 		$info = [];
         if( !empty($request->input('tokenid')) ) {
-            $info  = Researchinterest::where('userid', $token)->where('id',$request->input('tokenid'))->first();
+            $info  = Researchinterest::where('userid', $decryptedToken)->where('id',$request->input('tokenid'))->first();
         }
         $sections = Section::where('isactive',1)->where('type','researchpublications')->get();
 		return view('myadmin.scientistsadmin.modals.create_scientistpublicationshtml', [
             'sections' => $sections,
             'info' => $info,
-            'token' => $token,
+            'token' => $decryptedToken,
             'heading' => 'Publications'
         ]);
     }
-	public function biodataresearchespawardsAdmin( Request $request ): View|Factory {
-		$token =  Crypt::decrypt($request->query('_token'));
-		$userInfo  = User::find($token);
-		if( empty($userInfo) ) {
-			return Redirect::route('scientists');
+	public function biodataresearchespawardsAdmin( Request $request ): View|Factory|RedirectResponse {
+		$token = $request->query('_token');
+		if (!is_string($token)) {
+			return Redirect::route('scientists')->with('error', 'Invalid token');
 		}
+		$decryptedToken = Crypt::decrypt($token);
+		$userInfo = User::findOrFail($decryptedToken);
 		
         $sectionid = $request->input('sectionid');
-        $lists = Researchinterest::join('sections','sections.id','=','researchinterests.sectionid')->where(['userid'=>$token,'researchinterests.type'=>'researchbiodata','researchinterests.sectionid'=>$sectionid ])->select(['sections.sectionname', 'researchinterests.*']);
+        $lists = Researchinterest::join('sections','sections.id','=','researchinterests.sectionid')->where(['userid'=>$decryptedToken,'researchinterests.type'=>'researchbiodata','researchinterests.sectionid'=>$sectionid ])->select(['sections.sectionname', 'researchinterests.*']);
         if($request->filled('search')) {
 			$lists->where('researchinterests.description','LIKE','%'.$request->input('search').'%');
 		}
@@ -298,12 +352,14 @@ class TeamController extends Controller {
     }
     ///////////////////////////////////////////////////////////////////////////////////////
 	public function sortOrders(Request $request): JsonResponse {
-		$orders = $request->input('order');
+		$orders = $request->input('order', []);
 		foreach ($orders as $order) {
-			$id = $order['id'];
-			$position = $order['position'];
-			$userid = $order['userid'];
-			$sectionid = $order['sectionid'];
+			if (!is_array($order)) continue;
+			$id = $order['id'] ?? null;
+			$position = $order['position'] ?? null;
+			$userid = $order['userid'] ?? null;
+			$sectionid = $order['sectionid'] ?? null;
+			if ($id === null || $position === null || $userid === null || $sectionid === null) continue;
         // dd($id);
 		// dd($catid);
 	
@@ -320,31 +376,33 @@ class TeamController extends Controller {
         return Response::json(['status' => 'success']);
 	}
     //////////////////////////////////////////////////////////////////////////////////////
-	public function createbiodataresearchespawardsAdmin(Request $request): View|Factory {
-        $token =  Crypt::decrypt($request->query('_token'));
-		$userInfo  = User::find($token);
-		if( empty($userInfo) ) {
-			return Redirect::route('scientists');
+	public function createbiodataresearchespawardsAdmin(Request $request): View|Factory|RedirectResponse {
+        $token = $request->query('_token');
+		if (!is_string($token)) {
+			return Redirect::route('scientists')->with('error', 'Invalid token');
 		}
+		$decryptedToken = Crypt::decrypt($token);
+		$userInfo = User::findOrFail($decryptedToken);
 		
 		$info = [];
         if( !empty($request->input('tokenid')) && !empty($request->input('sectionid')) ) {
-            $info  = Researchinterest::where(['userid'=>$token,'id'=>$request->input('tokenid'), 'sectionid'=>$request->input('sectionid') ])->first();
+            $info  = Researchinterest::where(['userid'=>$decryptedToken,'id'=>$request->input('tokenid'), 'sectionid'=>$request->input('sectionid') ])->first();
         }
 		return view('myadmin.scientistsadmin.modals.create_researchbiodataawardshtml', [
             'info' => $info,
-            'token' => $token,
+            'token' => $decryptedToken,
             'sectionid' => $request->input('sectionid'),
             'heading' => ($request->input('sectionid') == 10 ? 'Research Experience' : 'Awards & Honours')
         ]);
     }
-	public function biodataresearchegrantAdmin( Request $request ): View|Factory {
-		$token =  Crypt::decrypt($request->query('_token'));
-		$userInfo  = User::find($token);
-		if( empty($userInfo) ) {
-			return Redirect::route('scientists');
+	public function biodataresearchegrantAdmin( Request $request ): View|Factory|RedirectResponse {
+		$token = $request->query('_token');
+		if (!is_string($token)) {
+			return Redirect::route('scientists')->with('error', 'Invalid token');
 		}
-        $lists = Researchinterest::join('sections','sections.id','=','researchinterests.sectionid')->where(['userid'=>$token,'researchinterests.type'=>'researchbiodata','researchinterests.sectionid'=>$this->GrantSectionId ])->select(['sections.sectionname', 'researchinterests.*']);
+		$decryptedToken = Crypt::decrypt($token);
+		$userInfo = User::findOrFail($decryptedToken);
+        $lists = Researchinterest::join('sections','sections.id','=','researchinterests.sectionid')->where(['userid'=>$decryptedToken,'researchinterests.type'=>'researchbiodata','researchinterests.sectionid'=>$this->GrantSectionId ])->select(['sections.sectionname', 'researchinterests.*']);
         if($request->filled('search')) {
 			$lists->where('researchinterests.description','LIKE','%'.$request->input('search').'%');
 		}
@@ -356,24 +414,25 @@ class TeamController extends Controller {
             'heading' => 'Research Grants Secured'
         ]);
     }
-    public function createbiodataresearchegrantAdmin(Request $request): View|Factory {
-        $token =  Crypt::decrypt($request->query('_token'));
-		$userInfo  = User::find($token);
-		if( empty($userInfo) ) {
-			return Redirect::route('scientists');
+    public function createbiodataresearchegrantAdmin(Request $request): View|Factory|RedirectResponse {
+        $token = $request->query('_token');
+		if (!is_string($token)) {
+			return Redirect::route('scientists')->with('error', 'Invalid token');
 		}
+		$decryptedToken = Crypt::decrypt($token);
+		$userInfo = User::findOrFail($decryptedToken);
 		
 		$info = [];
         if( !empty($request->input('tokenid')) ) {
             $info  = Researchinterest::where([
-                'userid'=>$token,
+                'userid'=>$decryptedToken,
                 'id'=>$request->input('tokenid'),
                 'sectionid'=>$this->GrantSectionId,
                 ])->first();
         }
 		return view('myadmin.scientistsadmin.modals.create_biodataresearchegranthtml', [
             'info' => $info,
-            'token' => $token,
+            'token' => $decryptedToken,
             'sectionid' => $this->GrantSectionId,
             'heading' => 'Research Grants Secured'
         ]);
@@ -395,9 +454,11 @@ class TeamController extends Controller {
 
                 if ($request->hasFile('interimage')) {
                     $interimage = $request->file('interimage');
-                    $interimageName = $request->input('userid') . '_' . time() . '.' . $interimage->extension();
-                    $interimage->move(public_path('userpics'), $interimageName);
-                    $findData->interimage = $interimageName;
+                    if ($interimage instanceof UploadedFile) {
+                        $interimageName = $request->input('userid') . '_' . time() . '.' . $interimage->getClientOriginalExtension();
+                        $interimage->move(public_path('userpics'), $interimageName);
+                        $findData->interimage = $interimageName;
+                    }
                 }
 
                 $findData->save();
@@ -419,9 +480,11 @@ class TeamController extends Controller {
 
             if ($request->hasFile('interimage')) {
                 $interimage = $request->file('interimage');
-                $interimageName = $request->input('userid') . '_' . time() . '.' . $interimage->extension();
-                $interimage->move(public_path('userpics'), $interimageName);
-                $userDetailsInfo->interimage = $interimageName;
+                if ($interimage instanceof UploadedFile) {
+                    $interimageName = $request->input('userid') . '_' . time() . '.' . $interimage->getClientOriginalExtension();
+                    $interimage->move(public_path('userpics'), $interimageName);
+                    $userDetailsInfo->interimage = $interimageName;
+                }
             }
 
             $userDetailsInfo->save();
@@ -456,7 +519,7 @@ class TeamController extends Controller {
                                        ->where('userid', $request->input('userid'))
                                        ->orderBy('sortorder', 'DESC')
                                        ->first();
-            $sortorder = $getlast ? $getlast->sortorder + 1 : 1;
+            $sortorder = $getlast ? ($getlast->sortorder + 1) : 1;
 
             $userDetailsInfo = new Researchinterest();
             $userDetailsInfo->fill($request->only([
@@ -484,7 +547,7 @@ class TeamController extends Controller {
         return view('myadmin.teams.listhtml', [
             'lists' => $lists,
             'search' => $search,
-            'totalrecords' => 'Core member : '.$lists->count().' Records found',
+            'totalrecords' => 'Core member : '.$lists->total().' Records found',
             'catlists' => $this->catlists,
             'catid' => $request->input('catid')
         ]);
@@ -514,32 +577,63 @@ class TeamController extends Controller {
 
     public function scientist_researchhighlights_UpdateOrder(Request $request): JsonResponse
     {
-        $orders = $request->input('order');
+
+         /** 
+         * @var array<array{id: int, position: int, type: string}> $orders
+         */
+        $orders = $request->input('order', []);
         foreach ($orders as $order) {
+            
             $id = $order['id'];
             $position = $order['position'];
             $type = $order['type'];
           
+          
+          
+
+
+
+             // Retrieve a single Post model instance
+            /** @var \App\Models\Researchinterest|null $list */
             $list =   Researchinterest::where('id', $id)->where('type',$type)
                 ->firstOrFail();
-            $list->sortorder = $position;
-            $list->save();
+				if ($list !== null) {
+					// Ensure $list is not null before accessing properties
+					$list->sortorder = $position;
+					$list->save();
+				}
         }
         return Response::json(['status' => 'success']);
     }
 
     public function scientist_researchpublications_UpdateOrder(Request $request): JsonResponse
     {
-        $orders = $request->input('order');
+
+         /** 
+         * @var array<array{id: int, position: int, type: string}> $orders
+         */
+        $orders = $request->input('order', []);
         foreach ($orders as $order) {
+            
             $id = $order['id'];
             $position = $order['position'];
             $type = $order['type'];
+            
           
-            $list =   Researchinterest::where('id', $id)->where('researchinterests.type','researchpublications')
+         
+
+
+ // Retrieve a single Post model instance
+            /** @var \App\Models\Researchinterest|null $list */
+           $list =   Researchinterest::where('id', $id)->where('researchinterests.type','researchpublications')
                 ->firstOrFail();
-            $list->sortorder = $position;
-            $list->save();
+				if ($list !== null) {
+					// Ensure $list is not null before accessing properties
+					$list->sortorder = $position;
+					$list->save();
+				}
+
+            
         }
         return Response::json(['status' => 'success']);
     }

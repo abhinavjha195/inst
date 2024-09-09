@@ -29,7 +29,7 @@ class BlogController extends Controller
 		$this->statusArrays = array(''=>'Status', 0=>'inactive',1=>'Active');
 	}
 
-    public function indexconferencesworkshop(Request $request): View
+    public function indexconferencesworkshop(Request $request): View|Factory
     {
         $search = $request->query('search');
         $catid = $request->query('catid');
@@ -40,10 +40,10 @@ class BlogController extends Controller
         }	
         $lists = $query->paginate(40);
 
-        return view('myadmin.conferencesworkshop.listhtml',['lists' =>$lists, 'search'=>$search,'totalrecords'=>'Conferences & Workshop : '.$lists->count().' Records found'] );
+        return view('myadmin.conferencesworkshop.listhtml',['lists' =>$lists, 'search'=>$search,'totalrecords'=>'Conferences & Workshop : '.$lists->total().' Records found'] );
     }
 
-    public function createconferencesworkshop(): View
+    public function createconferencesworkshop(): View|Factory
     {
         $scientists = User::join('userdetails', 'users.id', '=', 'userdetails.userid')->select(['users.*', 'userdetails.designation'])->where('users.roles', 'scientists')->orderBy('name', 'ASC')->get();
         // dd($scientists);
@@ -78,16 +78,25 @@ class BlogController extends Controller
 
     public function workshopUpdateOrder(Request $request): JsonResponse
     {
+
+		 /** 
+         * @var array<array{id: int, position: int, type: string}> $orders
+         */
         $orders = $request->input('order');
         foreach ($orders as $order) {
             $id = $order['id'];
             $position = $order['position'];
             $pagetype = $order['type'];
 
+			 // Retrieve a single Post model instance
+            /** @var \App\Models\myadmin\Post|null $list */
             $list = Post::where('id', $id)->where('pagetype',$pagetype)
                 ->firstOrFail();
-            $list->sortorder = $position;
-            $list->save();
+				if ($list !== null) {
+					// Ensure $list is not null before accessing properties
+					$list->sortorder = $position;
+					$list->save();
+				}
         }
 
         return Response::json(['status' => 'success']);

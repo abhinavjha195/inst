@@ -37,7 +37,7 @@ class CategoryController extends Controller {
 			$category->where('catname','LIKE','%'.request('search').'%');
 		}
 		$lists = $category->orderBy('id','ASC')->where('type',$cat_type)->paginate(20);
-		return view('myadmin.categories.listhtml',['lists' =>$lists,'cat_type'=> $cat_type, 'search'=>$search,'totalrecords'=>ucwords($cat_type).' Categories : '.$lists->count().' Records found'] );
+		return view('myadmin.categories.listhtml',['lists' =>$lists,'cat_type'=> $cat_type, 'search'=>$search,'totalrecords'=>ucwords($cat_type).' Categories : '.$lists->total().' Records found'] );
     }
     public function create(): View|Factory {
 		$current_uri = request()->segments();
@@ -69,10 +69,11 @@ class CategoryController extends Controller {
 		$categories = category::where('id',$id)->first();
 		$parentcats = category::where('parentid',0)->where('type','blogs')->get();
 		if($categories) {
-			return view('myadmin.categories.edithtml')
-				->with('statusArrays',$this->statusArrays)
-				->with('info',$categories)
-				->with('parentcats',$parentcats);
+			return view('myadmin.categories.edithtml', [
+				'statusArrays' => $this->statusArrays,
+				'info' => $categories,
+				'parentcats' => $parentcats
+			]);
 		} else {
 			return Redirect::route('banners')->with('status', 'Permission denied for this.');
 		}
@@ -110,7 +111,7 @@ class CategoryController extends Controller {
 			$category->where('catname','LIKE','%'.request('search').'%');
 		}
 		$lists = $category->orderBy('id','DESC')->where('type','activities')->paginate(20);
-		return view('myadmin.categories.listhtml',['lists' =>$lists, 'search'=>$search,'totalrecords'=>'School Activities Category : '.$lists->count().' Records found'] );
+		return view('myadmin.categories.listhtml',['lists' =>$lists, 'search'=>$search,'totalrecords'=>'School Activities Category : '.$lists->total().' Records found'] );
     }
 
 }

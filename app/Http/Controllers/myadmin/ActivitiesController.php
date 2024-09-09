@@ -233,7 +233,6 @@ class ActivitiesController extends Controller
 			[
 				'albumid' => 'required|max:100',
 				'attachmentname' => 'required',
-				// 'attachmentfile' => 'mimes:pdf|max:50000'
 				'attachmentfile' => 'max:50000'
 			],
 			[
@@ -243,10 +242,15 @@ class ActivitiesController extends Controller
 			]
 		);
 		$attachmentfileName = '';
-		if (!empty($request->file('attachmentfile'))) {
+		if ($request->hasFile('attachmentfile')) {
 			$attachmentfile = $request->file('attachmentfile');
-			$attachmentfileName = $request->input('albumid') . '_' . time() . '.' . $attachmentfile->extension();
-			$attachmentfile->move(public_path('userpics'), $attachmentfileName);
+			if (is_array($attachmentfile)) {
+				$attachmentfile = $attachmentfile[0]; // Take the first file if it's an array
+			}
+			if ($attachmentfile instanceof \Illuminate\Http\UploadedFile) {
+				$attachmentfileName = $request->input('albumid') . '_' . time() . '.' . $attachmentfile->getClientOriginalExtension();
+				$attachmentfile->move(public_path('userpics'), $attachmentfileName);
+			}
 		}
 		$userDetailsInfo = new Albumimage();
 		$userDetailsInfo->albumid = $request->input('albumid');
@@ -273,10 +277,15 @@ class ActivitiesController extends Controller
 			]
 		);
 		$attachmentfileName = '';
-		if (!empty($request->file('attachmentfile'))) {
+		if ($request->hasFile('attachmentfile')) {
 			$attachmentfile = $request->file('attachmentfile');
-			$attachmentfileName = $request->input('albumid') . '_' . time() . '.' . $attachmentfile->extension();
-			$attachmentfile->move(public_path('userpics'), $attachmentfileName);
+			if (is_array($attachmentfile)) {
+				$attachmentfile = $attachmentfile[0]; // Take the first file if it's an array
+			}
+			if ($attachmentfile instanceof \Illuminate\Http\UploadedFile) {
+				$attachmentfileName = $request->input('albumid') . '_' . time() . '.' . $attachmentfile->getClientOriginalExtension();
+				$attachmentfile->move(public_path('userpics'), $attachmentfileName);
+			}
 		}
 		$userDetailsInfo = new Albumimage();
 		$userDetailsInfo->albumid = $request->input('albumid');

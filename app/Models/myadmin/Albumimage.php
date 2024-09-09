@@ -20,7 +20,16 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
  * 
  * 
+ *
+ * Add a basic where clause to the query.
+ *
+ * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
+ * 
+ * 
+ * 
+ * 
  */
+
 
 
 

@@ -8,6 +8,51 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+
+
+/**
+ * Add a basic where clause to the query.
+ * 
+ * 
+
+ *
+ * @property mixed $password
+ * @property mixed $roles
+ * @property mixed $email
+ * @property mixed $isactive
+ *  @property mixed $id
+ *  @property mixed $name
+ *  @property mixed $sirname
+ *  @property mixed $ispasswordchange
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ *
+
+ * Add a basic where clause to the query.
+ *
+ * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
+ * 
+ * 
+ * 
+ *  @method static \App\Models\User findOrFail(mixed $id)
+ * 
+ * Finds a user by their primary key. If no user is found, an exception is thrown.
+ * 
+ * @param int $id The primary key of the user to find.
+ * @return \App\Models\User
+ * 
+ * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+ * 
+ *
+ 
+ */
+
+
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
@@ -22,6 +67,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'ispasswordchange',
     ];
 
     /**

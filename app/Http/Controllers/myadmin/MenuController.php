@@ -21,9 +21,16 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Contracts\View\Factory;
 
 class MenuController extends Controller {
+
+     /**
+     * @var array<string, string>
+     */
+    protected array $statusArrays;
 	
     public function index(): View|Factory {
-		$this->statusArrays = array(''=>'Status', 'inactive'=>'inActive','active'=>'Active');
+		//$this->statusArrays = array(''=>'Status', 'inactive'=>'inActive','active'=>'Active');
+
+        $this->statusArrays = ['' => 'Status', 'inactive' => 'inActive', 'active' => 'Active'];
 		$lists = Post::orderBy('pagename_en')->where('pagetype','pages')->get();
 		
 		$html_menu = $this->get_menuTree();
@@ -181,6 +188,9 @@ class MenuController extends Controller {
 	////////////////////////////////////////////////////////
 	public function sortorderquicklinks(Request $request): JsonResponse
 	{
+        /** 
+         * @var array<array{id: int, position: int, userid: int}> $orders
+         */
 		$orders = $request->input('sortorder');
 		foreach ($orders as $order) {
 			$id = $order['id'];
@@ -188,11 +198,23 @@ class MenuController extends Controller {
 			$userid = $order['userid'];
 			// dd($albumid);
 		
-			$list = Quicklink::where('user_id', $userid)
-							   ->where('id', $id)
-							   ->firstOrFail();
-			$list->sortorder = $position;
-			$list->save();
+			// $list = Quicklink::where('user_id', $userid)
+			// 				   ->where('id', $id)
+			// 				   ->firstOrFail();
+			// $list->sortorder = $position;
+			// $list->save(); 
+
+
+             // Retrieve a single Post model instance
+            /** @var \App\Models\myadmin\Quicklink|null $list */
+            $list = Quicklink::where('user_id', $userid)
+            ->where('id', $id)
+            ->firstOrFail();
+				if ($list !== null) {
+					// Ensure $list is not null before accessing properties
+					$list->sortorder = $position;
+					$list->save();
+				}
 		}
 		
 	

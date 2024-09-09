@@ -38,7 +38,7 @@ class BannerController extends Controller {
         return view('myadmin.bannershtml', [
             'lists' => $banners,
             'search' => $search,
-            'totalrecords' => 'Banners : ' . $banners->count() . ' Records found'
+            'totalrecords' => 'Banners : ' . $banners->total() . ' Records found'
         ]);
     }
     public function create(): View|Factory|RedirectResponse
@@ -74,18 +74,23 @@ class BannerController extends Controller {
 		// $banner->user_id = Auth()->id();
 		$banner->user_id = 1;
 		$bannerimageName = '';
-		if( !empty($request->file('bannerimage')) ) {
+		if ($request->hasFile('bannerimage')) {
 			$bannerimage = $request->file('bannerimage');
-			$bannerimageName = '1'.'_'.time().'.'.$bannerimage->extension();
-			$bannerimage->move(public_path('uploads/images'),$bannerimageName);
+			if (is_array($bannerimage)) {
+				$bannerimage = $bannerimage[0]; // Take the first file if it's an array
+			}
+			if ($bannerimage instanceof \Illuminate\Http\UploadedFile) {
+				$bannerimageName = '1' . '_' . time() . '.' . $bannerimage->getClientOriginalExtension();
+				$bannerimage->move(public_path('uploads/images'), $bannerimageName);
+			}
 		}
-		if( !empty($bannerimageName) ) {
+		if (!empty($bannerimageName)) {
 			$banner->bannerimage = $bannerimageName;
 		}
 		$banner->save();
 		return Redirect::route('banners')->with('status', ' Banner has been saved successfully');
     }
-	public function edit(Request $request, int $bannerid): RedirectResponse
+	public function edit(Request $request, int $bannerid): View|Factory|RedirectResponse
     {
 		if( getcurrentUserRole() != 'users') {
 			return Redirect::route('scientists');
@@ -115,7 +120,7 @@ class BannerController extends Controller {
 				'isactive.required' => 'The Status is required',
 			]
 		);
-		$banner = Banner::find($bannerid);
+		$banner = Banner::findOrFail($bannerid);
 		if( $banner ) {
 			$banner->title_en = $request->input('title_en');
 			$banner->title_hi = $request->input('title_hi');
@@ -126,13 +131,17 @@ class BannerController extends Controller {
 			$banner->description_hi = $request->input('description_hi');
 			// $banner->user_id = Auth()->id();
 			$bannerimageName = '';
-			if( !empty($request->file('bannerimage')) ) {
+			if ($request->hasFile('bannerimage')) {
 				$bannerimage = $request->file('bannerimage');
-				// $bannerimageName = Auth()->id().'_'.time().'.'.$bannerimage->extension();
-				$bannerimageName = id().'_'.time().'.'.$bannerimage->extension();
-				$bannerimage->move(public_path('uploads/images'),$bannerimageName);
+				if (is_array($bannerimage)) {
+					$bannerimage = $bannerimage[0]; // Take the first file if it's an array
+				}
+				if ($bannerimage instanceof \Illuminate\Http\UploadedFile) {
+					$bannerimageName = '1' . '_' . time() . '.' . $bannerimage->getClientOriginalExtension();
+					$bannerimage->move(public_path('uploads/images'), $bannerimageName);
+				}
 			}
-			if( !empty($bannerimageName) ) {
+			if (!empty($bannerimageName)) {
 				$banner->bannerimage = $bannerimageName;
 			}
 			$banner->save();
