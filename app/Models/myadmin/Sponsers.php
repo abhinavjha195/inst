@@ -12,8 +12,8 @@ use Illuminate\Database\Eloquent\Model;
      * 
      *  @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
  *
- * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
- * 
+ * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null, string $operator = '=')
+ * @method static int count()
  * 
  * @property mixed $isactive
  * @property mixed $title_en
@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property mixed $link
  * @property mixed $image_file
  * @property mixed $sponser_category
+ * @property mixed $sortorder
  * 
  *
  */

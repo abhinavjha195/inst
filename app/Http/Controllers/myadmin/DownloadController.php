@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
 use App\Models\User;
 use Validator;
 use App\Models\myadmin\Albumimage;
-use File;
+// use File;
 use Illuminate\Contracts\View\View;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
@@ -20,6 +20,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 
 class DownloadController extends Controller
 {
@@ -102,7 +103,16 @@ class DownloadController extends Controller
 
         $coordinator->save();
 
-        return Redirect::route($request->input('type'))->with('status', ' Content has been saved successfully');
+        // Retrieve 'pagetype' from request
+    $pagetype = $request->input('type', 'pages');
+
+    // Ensure $pagetype is a string
+    if (!is_string($pagetype)) {
+        $pagetype = 'pages'; // Fallback to a default route if the type is not correct
+    }
+
+
+        return Redirect::route($pagetype)->with('status', ' Content has been saved successfully');
     }
 
     public function internalfileupload(Request $request): RedirectResponse
@@ -173,15 +183,20 @@ class DownloadController extends Controller
         }
 
         $userDetailsInfo = Albumimage::find($request->input('albumid'));
+
+        if($userDetailsInfo){
         $userDetailsInfo->feature_image = $request->input('attachmentfile');
         $userDetailsInfo->tititle = $request->input('attachmentname');
         $userDetailsInfo->isactive = $request->input('isactive');
+        
 
         if (!empty($attachmentfileName)) {
             $userDetailsInfo->feature_image = $attachmentfileName;
         }
+    
 
         $saved = $userDetailsInfo->save();
+    }
 
         return Redirect::route('formsdownloads', ['id' => $request->input('albumid')])->with('status', ' Content has been updated successfully');
     }
@@ -277,9 +292,15 @@ class DownloadController extends Controller
             ->where('sections.type', 'downloads')
             ->orderBy('coordinators.order', 'ASC');
 
-        if (request('search')) {
-            $query->where('coordinators.name', 'LIKE', '%' . request('search') . '%');
-        }
+        // if (request('search')) {
+        //     $query->where('coordinators.name', 'LIKE', '%' . request('search') . '%');
+        // }
+
+        $search = $request->input('search'); // Safely retrieve the search value
+
+if (is_string($search) && !empty($search)) {
+    $query->where('coordinators.name', 'LIKE', '%' . $search . '%');
+}
 
         $search = $request->query('search');
         $catid = $request->query('catid');
@@ -291,7 +312,7 @@ class DownloadController extends Controller
         $sections = Section::where('isactive', 1)->where('type', 'downloads')->orderBy('id', 'ASC')->get();
         $lists = $query->paginate(60, ['coordinators.*', 'sections.sectionname']);
 
-        return view('myadmin.downloads.listhtml', ['lists' => $lists, 'catid' => $catid, 'sections' => $sections, 'search' => $search, 'totalrecords' => 'Internal forms / Downloads : ' . $lists->count() . ' Records found']);
+        return view('myadmin.downloads.listhtml', ['lists' => $lists, 'catid' => $catid, 'sections' => $sections, 'search' => $search, 'totalrecords' => 'Internal forms / Downloads : ' . $lists->total() . ' Records found']);
     }
 
     public function infrastructureinternal_forms_downloads_status(Request $request): JsonResponse
@@ -304,6 +325,9 @@ class DownloadController extends Controller
 
     public function updateOrders(Request $request): JsonResponse
     {
+          /** 
+         * @var array<array{id: int, position: int, catid: int}> $orders
+         */
         $orders = $request->input('order');
 
         foreach ($orders as $order) {
@@ -311,13 +335,20 @@ class DownloadController extends Controller
             $position = $order['position'];
             $catid = $order['catid'];
 
+
+            // Retrieve a single Post model instance
+            /** @var \App\Models\myadmin\Coordinator|null $list */
             $list = Coordinator::where('type', 'formsdownloads')
                 ->where('catid', $catid)
                 ->where('id', $id)
                 ->firstOrFail();
 
-            $list->order = $position;
-            $list->save();
+                if ($list !== null) {
+                    $list->order = $position;
+                    $list->save();
+				}
+            // $list->order = $position;
+            // $list->save();
         }
 
         return Response::json(['status' => 'success']);
@@ -365,17 +396,49 @@ class DownloadController extends Controller
     {
         $info = Coordinator::where('id', $id)->first();
 
-        if ($info->pdfone != "") {
-            File::delete(public_path('userpics/downloads') . '/' . $info->pdfone);
-            Coordinator::where('id', $id)->delete();
+       
+        // Check if $info is not null
+    if ($info !== null) {
+        // Check if the pdfone property is not empty
+        if (!empty($info->pdfone)) {
+            $filePath = public_path('userpics/downloads') . '/' . $info->pdfone;
+
+            // Ensure the file exists before attempting to delete it
+            if (File::exists($filePath)) {
+                File::delete($filePath);
+            }
+
+            // Clear the pdfone property
+            $info->pdfone = '';
+            $info->save(); // Save changes to the database
         }
 
+        // Delete the Coordinator record
+        Coordinator::where('id', $id)->delete();
+    }
+
+      // Check if $info is not null
+    if ($info !== null) {
+        // Check if the pdftwo property is not empty
         if ($info->pdftwo != "") {
-            File::delete(public_path('userpics/downloads') . '/' . $info->pdftwo);
-            Coordinator::where('id', $id)->delete();
+            $filePath = public_path('userpics/downloads') . '/' . $info->pdftwo;
+
+            // Ensure the file exists before attempting to delete it
+            if (File::exists($filePath)) {
+                File::delete($filePath);
+            }
+
+            // Clear the pdftwo property
+            $info->pdftwo = '';
+            $info->save();
         }
+
+        // Delete the Coordinator record
+        Coordinator::where('id', $id)->delete();
+    } 
 
         $info->delete();
+    
 
         return Redirect::route('formsdownloads')->with('status', ' Content has been updated successfully');
     }
@@ -386,17 +449,41 @@ class DownloadController extends Controller
         $key = $request->input('key');
         $info = Coordinator::find($itemid);
 
-        if ($info->pdfone != ""  && $key == "pdfone") {
-            File::delete(public_path('userpics/downloads') . '/' . $info->pdfone);
+        // if ($info->pdfone != ""  && $key == "pdfone") {
+        //     File::delete(public_path('userpics/downloads') . '/' . $info->pdfone);
+        //     $info->pdfone = '';
+        // }
+
+        if($info){
+        if ($info->pdfone != "" && $key == "pdfone") {
+            // Ensure the file exists before attempting to delete
+            $filePath = public_path('userpics/downloads') . '/' . $info->pdfone;
+            if (File::exists($filePath)) {
+                File::delete($filePath);
+            }
             $info->pdfone = '';
         }
+    }
 
-        if ($info->pdftwo != ""  && $key == "pdftwo") {
-            File::delete(public_path('userpics/downloads') . '/' . $info->pdftwo);
+        // if ($info->pdftwo != ""  && $key == "pdftwo") {
+        //     File::delete(public_path('userpics/downloads') . '/' . $info->pdftwo);
+        //     $info->pdftwo = '';
+        // }
+
+
+        if($info){
+        if ($info->pdftwo != "" && $key == "pdftwo") {
+            // Ensure the file exists before attempting to delete
+            $filePath = public_path('userpics/downloads') . '/' . $info->pdftwo;
+            if (File::exists($filePath)) {
+                File::delete($filePath);
+            }
             $info->pdftwo = '';
         }
-
+    }
+    if($info){
         $info->save();
+    }
 
         return Redirect::route($request->input('type'))->with('status', ' Content has been saved successfully');
     }
@@ -417,9 +504,15 @@ class DownloadController extends Controller
             $results->where('researchgroups.userid', request('professorid'));
         }
 
-        if (request('search')) {
-            $results->where('researchgroups.name', 'Like', '%' . request('search') . '%');
-        }
+        // if (request('search')) {
+        //     $results->where('researchgroups.name', 'Like', '%' . request('search') . '%');
+        // }
+
+        $search = $request->input('search'); // Safely retrieve the search value
+
+if (is_string($search) && !empty($search)) {
+    $results->where('researchgroups.name', 'Like', '%' . $search . '%');
+}
 
         $others =  Researchgroup::join('sections', 'sections.id', '=', 'researchgroups.corembrid')->where('sections.type', 'coregroupmembers')->where('userid',777)->select(['researchgroups.*','sections.sectionname'])->get();
 
@@ -490,7 +583,7 @@ class DownloadController extends Controller
 
     public function removestudent(Request $request): RedirectResponse
     {
-        $ids = $request->pageid;
+        $ids = $request->input('pageid');
         Researchgroup::where('id', $ids)->delete();
         return Redirect::route('students')->with('status', 'Student Remove Successfully');
     }
@@ -499,25 +592,30 @@ class DownloadController extends Controller
     {
         $orders = $request->input('order');
 
-        $fromId = $orders[0]['fromid'];
-        $toposition = $orders[0]['toposition'];
+        // Check if $orders is an array and has the required structure
+        if (is_array($orders) && isset($orders[0]['fromid'], $orders[0]['toposition'])) {
+            $fromId = $orders[0]['fromid'];
+            $toposition = $orders[0]['toposition'];
 
-        $gettoId = Coordinator::where('sortorder', $orders[0]['toposition'])->first();
+            $gettoId = Coordinator::where('sortorder', $toposition)->first();
 
-        $updateto =	Coordinator::where('id', $fromId)->update(['sortorder' => $toposition]);
-        $updateto =	Coordinator::where('id', $fromId)->first();
+            $updateto = Coordinator::where('id', $fromId)->update(['sortorder' => $toposition]);
+            $updateto = Coordinator::where('id', $fromId)->first();
 
-        $getrestdata = Coordinator::where('id', '!=', $fromId)->where('sortorder','>=',$toposition)
-            ->where('type', 'tenders')->orderBy('sortorder','ASC')->get();
+            $getrestdata = Coordinator::where('id', '!=', $fromId)->where('sortorder', '>=', $toposition)
+                ->where('type', 'tenders')->orderBy('sortorder', 'ASC')->get();
 
-        $i = $toposition+1;
+            $i = $toposition + 1;
 
-        foreach ($getrestdata as  $value) {
-            Coordinator::where('id',$value['id'])->update(['sortorder'=>$i]);
-            $i++ ;
+            foreach ($getrestdata as $value) {
+                Coordinator::where('id', $value['id'])->update(['sortorder' => $i]);
+                $i++;
+            }
+
+            return Response::json("success");
         }
 
-        return  Response::json("success");
+        return Response::json(['status' => 'error', 'message' => 'Invalid order data'], 400);
     }
 
     public function studentstatus(Request $request): JsonResponse

@@ -62,11 +62,16 @@ class PostController extends Controller {
 		$posts = Post::query();
 		$search = $request->query('search');
 		
-		if( request('search') ) {
-			$posts->where('pagename_en','LIKE','%'.request('search').'%');
-		}
+		$search = $request->input('search', ''); // Default to empty string if not provided
+ 
+if (is_string($search) && $search !== '') {
+    $posts->where('pagename_en', 'like', '%' . $search . '%');
+}
+		// if( request('search') ) {
+		// 	$posts->where('pagename_en','LIKE','%'.request('search').'%');
+		// }
 		$lists = $posts->orderBy('sortorder','ASC')->where('pagetype','pages')->paginate(50);
-		return view('myadmin.cmspageshtml',['lists' =>$lists, 'search'=>$search,'totalrecords'=>'Pages : '.$lists->count().' Records found'] );
+		return view('myadmin.cmspageshtml',['lists' =>$lists, 'search'=>$search,'totalrecords'=>'Pages : '.$lists->total().' Records found'] );
     }
     public function create(): View|Factory {
         return view('myadmin.createpagehtml',[
@@ -90,6 +95,11 @@ class PostController extends Controller {
 		//$page_slug = Slugservice::createSlug(Post::class,'slug', $request->pagename);
 
 		$pge_en=$request->input('pagename_en');
+
+		// Ensure $pge_en is a string
+		if (!is_string($pge_en)) {
+			$pge_en = ''; // Default value or handle as needed
+		}
 		$page_slug = $this->generateUniqueSlug($pge_en);
 		$post = new Post();
 		$post->pagename_en = $request->input('pagename_en');
@@ -152,6 +162,11 @@ class PostController extends Controller {
 	
 		// Ensure pagetype is a string
 		$pagetype = $request->input('pagetype', 'pages');
+
+		// Ensure $pagetype is a string
+		if (!is_string($pagetype)) {
+			$pagetype = 'pages'; // Fallback to a default route if the type is not correct
+		}
 		return Redirect::route($pagetype)->with('status', ' Content has been saved successfully');
     }
     public function edit(int $id): View|Factory|RedirectResponse {
@@ -251,11 +266,21 @@ class PostController extends Controller {
 			
 			// Ensure pagetype is a string
 			$pagetype = $request->input('pagetype', 'pages');
+
+			// Ensure $pagetype is a string
+			if (!is_string($pagetype)) {
+				$pagetype = 'pages'; // Fallback to a default route if the type is not correct
+			}
 			return Redirect::route($pagetype)->with('status', ' Content has been updated successfully');
 		} else {
 			
 			// Ensure pagetype is a string
 			$pagetype = $request->input('pagetype', 'pages');
+
+			// Ensure $pagetype is a string
+			if (!is_string($pagetype)) {
+				$pagetype = 'pages'; // Fallback to a default route if the type is not correct
+			}
 			return Redirect::route($pagetype)->with('status', 'Mentioned Id does not exist.');
 		}
     }
@@ -267,20 +292,26 @@ class PostController extends Controller {
 	}
 	/*************************/
 	public function newsevents(Request $request): View|Factory {
-		$search = $request->query('search');
+	//	$search = $request->query('search');
 		$catid = $request->query('catid');
 		$query = Post::join('categories', 'categories.id', '=', 'posts.catid')
 				->where('posts.pagetype','=','newsevents')
 				->orderBy('posts.id','DESC');	
-		if( request('search') ) {
-			$query->where( 'pagename','LIKE','%'.request('search').'%');
-		}	
+
+				$search = $request->input('search', ''); // Default to empty string if not provided
+ 
+if (is_string($search) && $search !== '') {
+    $query->where('pagename', 'like', '%' . $search . '%');
+}
+		// if( request('search') ) {
+		// 	$query->where( 'pagename','LIKE','%'.request('search').'%');
+		// }	
 		if( request('catid') ) {
 			$query->where( 'catid','=',request('catid') );
 		}
 		$lists = $query->paginate(40,['posts.*', 'categories.catname']);
 		
-		return view('myadmin.newsevents.newseventshtml',['lists' =>$lists,'catlists'=>$this->catlists,  'catid'=>$catid, 'search'=>$search,'totalrecords'=>'News & events : '.$lists->count().' Records found'] );
+		return view('myadmin.newsevents.newseventshtml',['lists' =>$lists,'catlists'=>$this->catlists,  'catid'=>$catid, 'search'=>$search,'totalrecords'=>'News & events : '.$lists->total().' Records found'] );
     }
 	public function createnewsevent(): View|Factory {
         return view('myadmin.newsevents.createnewseventhtml',[
@@ -335,18 +366,26 @@ public function removepages(Request $request): RedirectResponse {
 
 	public function websitepagesUpdateOrder(Request $request):JsonResponse
 	{
-
+   /** 
+         * @var array<array{id: int, position: int}> $orders
+         */
 		$orders = $request->input('order');
 		
 		foreach ($orders as $order) {
 			$id = $order['id'];
 			$position = $order['position'];
 	
+ // Retrieve a single Post model instance
+            /** @var \App\Models\myadmin\Post|null $list */
+
 			$list = Post::
 				where('id', $id)
 				->firstOrFail();
-			$list->sortorder = $position;
-			$list->save();
+				if ($list !== null) {
+					// Ensure $list is not null before accessing properties
+					$list->sortorder = $position;
+					$list->save();
+				}
 		
 		}
 	

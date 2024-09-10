@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth; // Add this line
 
 class FAQsController extends Controller
 {
@@ -58,7 +59,7 @@ class FAQsController extends Controller
         }
         $lists = $query->paginate(40,['faqs.*', 'categories.catname']);
         
-        return view('myadmin.faqs.listhtml',['lists' =>$lists,'catlists'=>$this->catlists, 'search'=>$search, 'catid'=>$catid,'totalrecords'=>'FAQs : '.$lists->count().' Records found'] );
+        return view('myadmin.faqs.listhtml',['lists' =>$lists,'catlists'=>$this->catlists, 'search'=>$search, 'catid'=>$catid,'totalrecords'=>'FAQs : '.$lists->total().' Records found'] );
     }
 
     public function create(): View|Factory
@@ -87,7 +88,7 @@ class FAQsController extends Controller
         $faqs->answer = $request->input('answer');
         $faqs->isactive = $request->input('isactive');
         $faqs->catid = $request->input('catid');
-        $faqs->user_id = Auth()->id();
+        $faqs->user_id = Auth::id(); // Updated line
         $faqs->save();
         return Redirect::route('faqs')->with('status', ' Faqs has been saved successfully');
     }
@@ -97,10 +98,11 @@ class FAQsController extends Controller
         $faqs = Faqs::where('id',$id)->first();
         
         if($faqs) {
-            return view('myadmin.faqs.edithtml')
-                ->with('catlists',$this->catlists)
-                ->with('statusArrays',$this->statusArrays)
-                ->with('info',$faqs);
+            return view('myadmin.faqs.edithtml', [
+                'catlists' => $this->catlists,
+                'statusArrays' => $this->statusArrays,
+                'info' => $faqs
+            ]);
         } else {
             return Redirect::route('faqs')->with('status', 'Mentioned Id does not exist.');
         }
@@ -128,7 +130,7 @@ class FAQsController extends Controller
         $faqs->answer = $request->input('answer');
         $faqs->isactive = $request->input('isactive');
         $faqs->catid = $request->input('catid');
-        $faqs->user_id = Auth()->id();
+        $faqs->user_id = Auth::id(); // Updated line
         $faqs->save();
         return Redirect::route('faqs')->with('status', ' faqs has been updated successfully');
     }

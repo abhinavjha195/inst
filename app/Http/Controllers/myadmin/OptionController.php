@@ -108,6 +108,12 @@ class OptionController extends Controller {
         $type = $request->input('type', '');
         $sectionId = $request->input('sectionid');
 
+
+         // Ensure $itemOrder is an array
+    if (!is_array($itemOrder)) {
+        $itemOrder = [];
+    }
+
         foreach ($itemOrder as $sortorder => $autoid) {
             $sortorder = $sortorder + 1;
             

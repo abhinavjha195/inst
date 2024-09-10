@@ -15,7 +15,7 @@ use Cviebrock\EloquentSluggable\Sluggable;
  *
  * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
  * @method static \Illuminate\Database\Eloquent\Builder orderBy(string $column, string $direction = 'asc')
- *
+ * @method static \Illuminate\Database\Eloquent\Builder join(string $table, string $first, string $operator = '=', string $second = null, string $type = 'inner', string $where = 'and')
  * 
  * 
  * @property mixed $id

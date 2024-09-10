@@ -13,9 +13,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Contracts\View\Factory;
+use Illuminate\Http\UploadedFile;
 
 class ConferenceSponsersController extends Controller
 {
+   /**
+     * @var array<string, string>
+     */
     private array $statusArrays;
 
     public function __construct()
@@ -25,8 +29,16 @@ class ConferenceSponsersController extends Controller
 
     public function sponsers(Request $request): View|Factory
     {
-        $search = $request->query('search');
+         // Retrieve the 'search' query parameter
+    $search = $request->query('search', '');
+
+    // Ensure $search is a string and not an array or null
+    if (!is_string($search)) {
+        $search = '';
+    }
+    
         $sponsers = Sponsers::where('title_en','!=','')
+        
         ->where(function($query) use($search){
             $query->where('title_en','LIKE','%'.$search.'%');
         })
@@ -63,7 +75,7 @@ class ConferenceSponsersController extends Controller
         $post->link = $request->input('link');
         $post->title_hi = $request->input('pagename_hi');
         $image_path = "";
-        if ($request->hasFile('image_file')) {
+        if ($request->hasFile('image_file') && $request->file('image_file') instanceof UploadedFile) {
             $feature_image = $request->file('image_file');
             $image = time() . '.' . $feature_image->getClientOriginalExtension();
             $feature_image->move(public_path('/uploads/conference'), $image);
@@ -106,12 +118,12 @@ class ConferenceSponsersController extends Controller
         $post->title_hi = $request->input('title_hi');
 
         $image_path = "";
-        if ($request->hasFile('image_file')) {
+        if ($request->hasFile('image_file') && $request->file('image_file') instanceof UploadedFile) {
             $feature_image = $request->file('image_file');
             $image = time() . '.' . $feature_image->getClientOriginalExtension();
             $feature_image->move(public_path('/uploads/conference'), $image);
             $image_path = '/uploads/conference/' . $image;
-        }else{
+        } else {
             $image_path = $post->image_file;
         }
         $post->image_file = $image_path;
@@ -139,6 +151,9 @@ class ConferenceSponsersController extends Controller
     public function commponupdateorderascdesc(Request $request): JsonResponse
 	{
 
+          /** 
+         * @var array<array{id: int, position: int}> $orders
+         */
 		$orders = $request->input('order');
 		// dd($orders); 
 		foreach ($orders as $order) {
@@ -146,9 +161,20 @@ class ConferenceSponsersController extends Controller
 			$id = $order['id'];
 				$position = $order['position'];
 
+
+                // Retrieve a single Post model instance
+            /** @var \App\Models\myadmin\Sponsers|null $list */
+
+
 			$list = Sponsers::where('id', $id)->firstOrFail();
-			$list->sortorder = $position;
-			$list->save();
+			// $list->sortorder = $position;
+			// $list->save();
+
+            if ($list !== null) {
+                // Ensure $list is not null before accessing properties
+                $list->sortorder = $position;
+                $list->save();
+            }
 			// print_r($order);
 		}
 		// die;

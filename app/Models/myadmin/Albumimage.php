@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @property mixed $albumid
  * @property  mixed $tititle
+ * @property  mixed $photoname
  * @property mixed $feature_image
  * 
  * @property mixed $isactive
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 
  * 
  * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
- * 
+ * @method static \App\Models\myadmin\Albumimage|null find($id)
  * 
  *
  * Add a basic where clause to the query.

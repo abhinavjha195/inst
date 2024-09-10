@@ -45,7 +45,7 @@ class CategoryController extends Controller {
 		$lists = $category->orderBy('id','ASC')->where('type',$cat_type)->paginate(20);
 		return view('myadmin.categories.listhtml',['lists' =>$lists,'cat_type'=> $cat_type, 'search'=>$search,'totalrecords'=>ucwords($cat_type).' Categories : '.$lists->total().' Records found'] );
     }
-    public function create(): View|Factory {
+    public function create(Request $request): View|Factory {
 		$current_uri = $request->segments();
 		$cat_type =  end($current_uri);
 		$parentcats = category::where('parentid',0)->where('type','blogs')->get();
@@ -67,7 +67,7 @@ class CategoryController extends Controller {
 		$category->parentid = $request->input('parentid');
 		$category->isactive = $request->input('isactive');
 		$category->type = $request->input('type');
-		$category->user_id = Auth::id();
+		$category->user_id = Auth::id(); // Changed from Auth()->id()
 		$category->save();
 		return Redirect::route('categories', $request->input('type'))->with('status', ' Categories has been saved successfully');
     }
@@ -102,7 +102,7 @@ class CategoryController extends Controller {
 			$category->isactive = $request->input('isactive');
 			$category->type = $request->input('type');
 			$category->parentid = $request->input('parentid');
-			$category->user_id = Auth::id();
+			$category->user_id = Auth::id(); // Changed from Auth()->id()
 			$category->save();
 			return Redirect::route('categories', $request->input('type'))->with('status', ' Categories has been updated successfully');
 		} else {

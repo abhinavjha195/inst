@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  * Add a basic where clause to the query.
  * 
  * 
- * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
+ * @method static \Illuminate\Database\Eloquent\Builder where(array|string $conditions, mixed $value = null, string $operator = '=')
  * @method static \Illuminate\Database\Eloquent\Builder join(string $table, string $first, string $operator = '=', string $second = null, string $type = 'inner', string $where = 'and')
  *
  * 

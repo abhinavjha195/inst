@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Model;
  * 
  * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
  *
- * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
+ * @method static \Illuminate\Database\Eloquent\Builder where(array|string $conditions, mixed $value = null, string $operator = '=')
  * @method static \Illuminate\Database\Eloquent\Builder join(string $table, string $first, string $operator = '=', string $second = null, string $type = 'inner', string $where = 'and')
  *
 

@@ -42,16 +42,51 @@ class MenuController extends Controller {
 
     public function store(Request $request): RedirectResponse {
 		
-		$array_menu = json_decode($request->input('menu'), true);
+		// $array_menu = json_decode($request->input('menu'), true);
+
+		// Retrieve 'menu' from the request and ensure it's a string
+		$menuJson = $request->input('menu', '');
+
+		// Ensure $menuJson is a string
+		if (!is_string($menuJson)) {
+			$menuJson = ''; // Fallback or handle accordingly
+		}
+	
+		// Decode the JSON string into an associative array
+		$array_menu = json_decode($menuJson, true);
 		
-		Menulevel::query()->truncate();
+		// Menulevel::query()->truncate();
 		
-		$this->updateMenu($array_menu);
+		// $this->updateMenu($array_menu);
+
+
+
+
+
+
+		
+    if (is_array($array_menu)) {
+        // Proceed with updating the menu
+        Menulevel::query()->truncate();
+        $this->updateMenu($array_menu);
+    } else {
+        // Handle invalid JSON or non-array result gracefully
+        // For example, you might want to log this or use a default value
+        $array_menu = []; // Default to an empty array
+      
+        // Proceed with an empty menu or other default logic
+        Menulevel::query()->truncate();
+        $this->updateMenu($array_menu);
+    }
 		
 		return Redirect::route('menus')->with('status', ' Menu has been saved successfully');
 		
     }
 
+	/**
+ * @param array<int, array<string, mixed>> $menu
+ * @param int $parentid
+ */
     protected function updateMenu(array $menu, int $parentid = 0): void {
 		if (!empty($menu)) {
 			
