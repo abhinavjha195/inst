@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Model;
  * 
  * 
  * 
- * 
+ *  
  * @property mixed $title
  * @property mixed $description
  * @property mixed $type

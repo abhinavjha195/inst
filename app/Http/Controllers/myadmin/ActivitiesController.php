@@ -52,7 +52,7 @@ class ActivitiesController extends Controller
 		// dd($request->query('albumid'));
 		$lists =  $Query->orderBy('order', 'ASC')->where('albumid', $albumid)->paginate(30)->appends('albumid', $albumid);
 
-		return view('myadmin.albumsimages.listhtml', ['lists' => $lists, 'search' => $search, 'albuminfo' => $albuminfo, 'totalrecords' => 'Album ' . $albuminfo->name . ' : ' . $lists->count() . ' images found']);
+		return view('myadmin.albumsimages.listhtml', ['lists' => $lists, 'search' => $search, 'albuminfo' => $albuminfo, 'totalrecords' => 'Album ' . $albuminfo->name . ' : ' . $lists->total() . ' images found']);
 	}
 	public function create(Request $request): View|Factory
 	{
@@ -195,7 +195,7 @@ class ActivitiesController extends Controller
 		}
 		$albuminfo = Post::where('id', $tokenid)->first();
 		$lists =  $Query->orderBy('id', 'DESC')->where('albumid', $tokenid)->paginate(30)->appends('albumid', $tokenid);
-		return view('myadmin.faulities.listhtml', ['lists' => $lists, 'search' => $search, 'albuminfo' => $albuminfo, 'totalrecords' => $albuminfo->pagename_en . ' : ' . $lists->count() . ' records found']);
+		return view('myadmin.faulities.listhtml', ['lists' => $lists, 'search' => $search, 'albuminfo' => $albuminfo, 'totalrecords' => $albuminfo->pagename_en . ' : ' . $lists->total() . ' records found']);
 	}
 	public function createfaulity(Request $request): View|Factory
 	{
@@ -356,6 +356,8 @@ class ActivitiesController extends Controller
 		$update->tititle = $name;
 		$update->photoname = $photoname;
 		$update->feature_image = $image_path;
+
+		
 		$update->save();
 		return Redirect::route('albumimages', ['albumid' => $getimg['albumid']])
 			->with('status', 'Content has been Updated successfully');
@@ -364,6 +366,9 @@ class ActivitiesController extends Controller
 	public function rearrangecampus_images(Request $request): JsonResponse
 	{
 
+		 /** 
+         * @var array<array{id: int, position: int}> $orders
+         */
 		$orders = $request->input('order');
 
 		foreach ($orders as $order) {
@@ -371,10 +376,16 @@ class ActivitiesController extends Controller
 			$id = $order['id'];
 			$position = $order['position'];
 
+
+			 // Retrieve a single Post model instance
+            /** @var \App\Models\myadmin\Albumimage|null $list */
 			$list = Albumimage::where('id', $id)
 				->firstOrFail();
-			$list->order = $position;
-			$list->save();
+				if ($list !== null) {
+					// Ensure $list is not null before accessing properties
+					$list->sortorder = $position;
+					$list->save();
+				}
 		}
 
 		return Response::json(['status' => 'success']);

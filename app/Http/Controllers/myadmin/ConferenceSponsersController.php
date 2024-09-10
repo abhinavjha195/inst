@@ -92,12 +92,19 @@ class ConferenceSponsersController extends Controller
             'isactive' => 'required',
             'sponser_category' => 'required',
         ]);
-        $post =  Sponsers::where('id',$request->input('sponserid'))->first();
+
+        $post = Sponsers::find($request->input('sponserid'));
+
+        if (!$post) {
+            return Redirect::route('sponsers')->with('error', 'Sponser not found!');
+        }
+
         $post->title_en = $request->input('title_en');
         $post->sponser_category = $request->input('sponser_category');
         $post->isactive = $request->input('isactive');
         $post->link = $request->input('link');
         $post->title_hi = $request->input('title_hi');
+
         $image_path = "";
         if ($request->hasFile('image_file')) {
             $feature_image = $request->file('image_file');

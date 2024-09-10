@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property mixed $feature_image
  * 
  * @property mixed $isactive
+ * @property mixed $sortorder
 
  * 
  * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)

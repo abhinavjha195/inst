@@ -41,6 +41,8 @@ class FAQsController extends Controller
 
     public function index(Request $request): View|Factory
     {
+
+        echo 'abcd';
         $data_query = Faqs::query();
         $search = $request->input('search');
         $catid = $request->input('catid');

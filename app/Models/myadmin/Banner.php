@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
  *
  * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
- *
+ * @method static \App\Models\myadmin\Banner|null findOrFail($id, $columns = ['*'])
  * 
  * 
  * @property mixed $id

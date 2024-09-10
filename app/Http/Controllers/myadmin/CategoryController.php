@@ -27,20 +27,26 @@ class CategoryController extends Controller {
 	}
 	
     public function index(Request $request): View|Factory {
-		$current_uri = request()->segments();
+		$current_uri = $request->segments();
 		$cat_type =  end($current_uri);
 		
 		$category = category::query();
-		$search = $request->query('search');
+		// $search = $request->query('search');
 		
-		if( request('search') ) {
-			$category->where('catname','LIKE','%'.request('search').'%');
-		}
+		// if( request('search') ) {
+		// 	$category->where('catname','LIKE','%'.request('search').'%');
+		// }
+
+		$search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $category->where('title_en', 'like', '%' . $search . '%');
+        }
 		$lists = $category->orderBy('id','ASC')->where('type',$cat_type)->paginate(20);
 		return view('myadmin.categories.listhtml',['lists' =>$lists,'cat_type'=> $cat_type, 'search'=>$search,'totalrecords'=>ucwords($cat_type).' Categories : '.$lists->total().' Records found'] );
     }
     public function create(): View|Factory {
-		$current_uri = request()->segments();
+		$current_uri = $request->segments();
 		$cat_type =  end($current_uri);
 		$parentcats = category::where('parentid',0)->where('type','blogs')->get();
         return view('myadmin.categories.createhtml',['cat_type'=> $cat_type,'statusArrays'=>$this->statusArrays, 'parentcats'=> $parentcats]);
@@ -61,7 +67,7 @@ class CategoryController extends Controller {
 		$category->parentid = $request->input('parentid');
 		$category->isactive = $request->input('isactive');
 		$category->type = $request->input('type');
-		$category->user_id = Auth()->id();
+		$category->user_id = Auth::id();
 		$category->save();
 		return Redirect::route('categories', $request->input('type'))->with('status', ' Categories has been saved successfully');
     }
@@ -96,7 +102,7 @@ class CategoryController extends Controller {
 			$category->isactive = $request->input('isactive');
 			$category->type = $request->input('type');
 			$category->parentid = $request->input('parentid');
-			$category->user_id = Auth()->id();
+			$category->user_id = Auth::id();
 			$category->save();
 			return Redirect::route('categories', $request->input('type'))->with('status', ' Categories has been updated successfully');
 		} else {
@@ -105,11 +111,20 @@ class CategoryController extends Controller {
     }
 	public function activitiescats(Request $request): View|Factory {
 		$category = category::query();
-		$search = $request->query('search');
+		// $search = $request->query('search');
 		
-		if( request('search') ) {
-			$category->where('catname','LIKE','%'.request('search').'%');
-		}
+		// if( request('search') ) {
+		// 	$category->where('catname','LIKE','%'.request('search').'%');
+		// }
+
+
+		$search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $category->where('catname', 'like', '%' . $search . '%');
+        }
+
+
 		$lists = $category->orderBy('id','DESC')->where('type','activities')->paginate(20);
 		return view('myadmin.categories.listhtml',['lists' =>$lists, 'search'=>$search,'totalrecords'=>'School Activities Category : '.$lists->total().' Records found'] );
     }

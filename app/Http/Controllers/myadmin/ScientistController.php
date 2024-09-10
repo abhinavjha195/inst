@@ -24,28 +24,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 class ScientistController extends Controller
 {
-    /**
-     * @var array<string, string>
-     */
-    protected array $statusArrays;
+ 
 
-    /**
-     * @var Collection<int, category>
-     */
-    
-    protected Collection $catlists;
-
-
-      /**
-     * @var string
-     */
-    protected array $roles;
-
-
-      /**
-     * @var int
-     */
-    protected int $GrantSectionId;
+   
 
 
     public function __construct()

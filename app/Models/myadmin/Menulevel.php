@@ -11,8 +11,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property mixed $postid
  * @property mixed $parentid
  * @property mixed $user_id
+ * @property mixed $id
  * 
- * 
+ * @method static Builder select(array|mixed $columns = ['*'])
  * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
  * 
  * 

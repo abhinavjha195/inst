@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 	 * * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
  *
  * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
+ * @method static \App\Models\myadmin\category|null find($id, $columns = ['*'])
  * 
  * 
  * 

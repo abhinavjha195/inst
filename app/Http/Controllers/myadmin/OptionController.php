@@ -78,16 +78,20 @@ class OptionController extends Controller {
 
             if ($request->hasFile('featureimage')) {
                 $featureimage = $request->file('featureimage');
-                $featureimageName = Auth::id() . '_' . time() . '.' . $featureimage->extension();
-                $featureimage->move(public_path('uploads/images'), $featureimageName);
-                $option->featureimage = $featureimageName;
+                if ($featureimage instanceof \Illuminate\Http\UploadedFile) {
+                    $featureimageName = Auth::id() . '_' . time() . '.' . $featureimage->getClientOriginalExtension();
+                    $featureimage->move(public_path('uploads/images'), $featureimageName);
+                    $option->featureimage = $featureimageName;
+                }
             }
 
             if ($request->hasFile('featureimagetwo')) {
                 $featureimagetwo = $request->file('featureimagetwo');
-                $featureimagetwoName = Auth::id() . '_' . time() . '.' . $featureimagetwo->extension();
-                $featureimagetwo->move(public_path('uploads/images'), $featureimagetwoName);
-                $option->featureimagetwo = $featureimagetwoName;
+                if ($featureimagetwo instanceof \Illuminate\Http\UploadedFile) {
+                    $featureimagetwoName = Auth::id() . '_' . time() . '.' . $featureimagetwo->getClientOriginalExtension();
+                    $featureimagetwo->move(public_path('uploads/images'), $featureimagetwoName);
+                    $option->featureimagetwo = $featureimagetwoName;
+                }
             }
 
             $option->save();

@@ -31,9 +31,13 @@ class BannerController extends Controller {
 		}
 		$search = $request->query('search');
 		$Banner = Banner::query();
-        if (request('search')) {
-            $Banner->where('title_en', 'Like', '%' . request('search') . '%');
-        }
+       
+
+		$search = $request->input('search', ''); // Default to empty string if not provided
+
+if (is_string($search) && $search !== '') {
+    $Banner->where('title_en', 'like', '%' . $search . '%');
+}
         $banners =  $Banner->orderBy('id', 'DESC')->paginate(20);
         return view('myadmin.bannershtml', [
             'lists' => $banners,

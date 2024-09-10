@@ -19,6 +19,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Contracts\View\Factory;
+use Illuminate\Support\Facades\Auth;
 
 class MenuController extends Controller {
 
@@ -41,7 +42,7 @@ class MenuController extends Controller {
 
     public function store(Request $request): RedirectResponse {
 		
-		$array_menu = json_decode($request->menu, true);
+		$array_menu = json_decode($request->input('menu'), true);
 		
 		Menulevel::query()->truncate();
 		
@@ -68,7 +69,10 @@ class MenuController extends Controller {
 				
 				$Menulevel->parentid = $parentid;
 				
-				$Menulevel->user_id = Auth()->id();
+				// Replace this line:
+				// $Menulevel->user_id = Auth()->id();
+				// With this:
+				$Menulevel->user_id = Auth::id();
 				
 				$Menulevel->save();
 				
@@ -150,7 +154,7 @@ class MenuController extends Controller {
             $quicklink->type = $request->input('type');
             $quicklink->type = ($request->input('pageid') == 'custommenu' ? 'custommenu' : $request->input('type'));
             $quicklink->pageid = ($request->input('pageid') == 'custommenu' ? '0' : $request->input('pageid'));
-            $quicklink->user_id = auth()->id();
+            $quicklink->user_id = Auth::id();
             $quicklink->save();
 
             return Response::json(['status' => true, 'message' => 'Content has been updated successfully'], 200);
@@ -173,7 +177,7 @@ class MenuController extends Controller {
         $list->type = $request->input('type');
         $list->type = ($request->input('pageid') == 'custommenu' ? 'custommenu' : $request->input('type'));
         $list->pageid = ($request->input('pageid') == 'custommenu' ? '0' : $request->input('pageid'));
-        $list->user_id = auth()->id();
+        $list->user_id = Auth::id();
         $list->save();
     }
 

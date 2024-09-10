@@ -31,13 +31,20 @@ class BlogController extends Controller
 
     public function indexconferencesworkshop(Request $request): View|Factory
     {
-        $search = $request->query('search');
+       // $search = $request->query('search');
         $catid = $request->query('catid');
-        $query = Conferences::where('title_en','!=','');
+        $query = Conferences::where('title_en','!=',''); 
         // ->orderBy('sortorder', 'ASC');	
-        if( request('search') ) {
-            $query->where( 'title_en','LIKE','%'.request('search').'%');
-        }	
+        // if( request('search') ) {
+        //     $query->where( 'title_en','LIKE','%'.request('search').'%');
+        // }	
+
+        
+		$search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $query->where('title_en', 'like', '%' . $search . '%');
+        }
         $lists = $query->paginate(40);
 
         return view('myadmin.conferencesworkshop.listhtml',['lists' =>$lists, 'search'=>$search,'totalrecords'=>'Conferences & Workshop : '.$lists->total().' Records found'] );

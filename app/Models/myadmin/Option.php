@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
  *
  * 
- * 
+ * @property mixed $featureimage
  *
  */
 
