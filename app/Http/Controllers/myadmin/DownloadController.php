@@ -205,7 +205,7 @@ class DownloadController extends Controller
     {
         $itemid = $request->input('itemid');
         Albumimage::where('id', $itemid)->delete();
-        return redirect()->back()->with('status', ' Content has been deleted successfully');
+        return Redirect::back()->with('status', ' Content has been deleted successfully');
     }
 
     public function update(Request $request, int $id): RedirectResponse
@@ -410,7 +410,7 @@ if (is_string($search) && !empty($search)) {
 
             // Clear the pdfone property
             $info->pdfone = '';
-            $info->save(); // Save changes to the database
+           
         }
 
         // Delete the Coordinator record
@@ -430,15 +430,16 @@ if (is_string($search) && !empty($search)) {
 
             // Clear the pdftwo property
             $info->pdftwo = '';
-            $info->save();
+           
         }
 
         // Delete the Coordinator record
         Coordinator::where('id', $id)->delete();
     } 
 
+    if ($info) {
         $info->delete();
-    
+    }
 
         return Redirect::route('formsdownloads')->with('status', ' Content has been updated successfully');
     }

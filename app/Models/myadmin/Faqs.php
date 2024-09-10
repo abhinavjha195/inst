@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
  * @method static \Illuminate\Database\Eloquent\Builder join(string $table, string $first, string $operator = '=', string $second = null, string $type = 'inner', string $where = 'and')
- * 
+ * @method static \App\Models\myadmin\Faqs|null find($id)
  * 
  */
 

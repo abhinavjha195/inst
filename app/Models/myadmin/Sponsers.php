@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null, string $operator = '=')
  * @method static int count()
+ * @method static \App\Models\myadmin\Sponsers|null find($id)
  * 
  * @property mixed $isactive
  * @property mixed $title_en

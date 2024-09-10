@@ -126,12 +126,15 @@ class FAQsController extends Controller
             ]
         );
         $faqs = Faqs::find($id);
+
+        if($faqs){
         $faqs->question = $request->input('question');
         $faqs->answer = $request->input('answer');
         $faqs->isactive = $request->input('isactive');
         $faqs->catid = $request->input('catid');
         $faqs->user_id = Auth::id(); // Updated line
         $faqs->save();
+        }
         return Redirect::route('faqs')->with('status', ' faqs has been updated successfully');
     }
 
