@@ -49,10 +49,12 @@ class ActivitiesController extends Controller
 			$Query->where('title', 'Like', '%' . request('search') . '%');
 		}
 		$albuminfo = Coordinator::where('id', $albumid)->where('type', 'albums')->first();
-		// dd($request->query('albumid'));
-		$lists =  $Query->orderBy('order', 'ASC')->where('albumid', $albumid)->paginate(30)->appends('albumid', $albumid);
+		if (!$albuminfo) {
+			return Redirect::route('albumimages')->with('status', 'Album not found.'); // Ensure $albuminfo is valid
+		}
+		$lists =  $Query->orderBy('order', 'ASC')->where('albumid', $albumid)->paginate(30)->appends(['albumid' => $albumid]); // Ensure the key is a string
 
-		return view('myadmin.albumsimages.listhtml', ['lists' => $lists, 'search' => $search, 'albuminfo' => $albuminfo, 'totalrecords' => 'Album ' . $albuminfo->name . ' : ' . $lists->total() . ' images found']);
+		return view('myadmin.albumsimages.listhtml', ['lists' => $lists, 'search' => $search, 'albuminfo' => $albuminfo, 'totalrecords' => 'Album ' . ($albuminfo->name ?? 'Unknown') . ' : ' . $lists->total() . ' images found']);
 	}
 	public function create(Request $request): View|Factory
 	{
@@ -213,12 +215,12 @@ class ActivitiesController extends Controller
 	public function editfaulity(int $tokenid): View|Factory|RedirectResponse
 	{
 		$albuminfo = Post::where('id', $tokenid)->first();
-		if ($posts) {
+		if ($albuminfo) {
 			return view(
 				'myadmin.faulities.edithtml',
 				[
 					'statusArrays' => $this->statusArrays,
-					'heading' => $albuminfo->pagename_en . ': faculities',
+					'heading' => $albuminfo->pagename_en ?? 'Default Heading', // Use null coalescing operator
 					'info' => $albuminfo
 				]
 			);
@@ -332,34 +334,45 @@ class ActivitiesController extends Controller
 		$photoname = $request->input('photoname');
 		$campus = '';
 		$getimg = Albumimage::where('id', $request->input('albumId'))->first();
+		if (!$getimg) {
+			return Redirect::route('albumimages')->with('status', 'Album image not found.');
+		}
 
-		if (!empty($request->file('feature_image'))) {
-			$feature_image = $request->file('feature_image');
+		// Ensure $request->file('feature_image') is not an array
+		$feature_image = $request->file('feature_image');
+		if (is_array($feature_image)) {
+			$feature_image = $feature_image[0]; // Take the first file if it's an array
+		}
+
+		// Check if $feature_image is an instance of UploadedFile
+		if ($feature_image instanceof \Illuminate\Http\UploadedFile) {
 			$campus = time() . '.' . $feature_image->getClientOriginalExtension();
 			$feature_image->move(public_path('/uploads/campus-tour'), $campus);
 			$image_path = '/uploads/campus-tour/' . $campus;
 		} else {
-			$getimg = Albumimage::where('id', $request->input('albumId'))->first();
-			// dd($getimg);
-			$image_path = $getimg['feature_image'];
+			$image_path = $getimg->feature_image ?? ''; // Use existing image or empty string
 		}
+
 		$image_data = [
 			'albumid' => $albumid,
-			'tititle' => $name,
-			'photoname' => $photoname,
+			'tititle' => $name ?? '', // Use empty string if $name is null
+			'photoname' => $photoname ?? '', // Use empty string if $photoname is null
 			'isactive' => 1,
 			'created_at' => date('Y-m-d H:i:s'),
 			'feature_image' => $image_path,
 		];
 		// dd($getimg['albumid']);
 		$update = Albumimage::where('id', $request->input('albumId'))->first();
-		$update->tititle = $name;
-		$update->photoname = $photoname;
+		if (!$update) {
+			return Redirect::route('albumimages')->with('status', 'Album image not found for update.');
+		}
+
+		$update->tititle = $name ?? ''; // Use empty string if $name is null
+		$update->photoname = $photoname ?? ''; // Use empty string if $photoname is null
 		$update->feature_image = $image_path;
 
-		
 		$update->save();
-		return Redirect::route('albumimages', ['albumid' => $getimg['albumid']])
+		return Redirect::route('albumimages', ['albumid' => $getimg->albumid ?? ''])
 			->with('status', 'Content has been Updated successfully');
 	}
 
