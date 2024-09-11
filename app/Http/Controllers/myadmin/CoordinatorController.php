@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Contracts\View\Factory;
+use Illuminate\Support\Facades\Auth;
 
 class CoordinatorController extends Controller
 {
@@ -58,7 +59,7 @@ class CoordinatorController extends Controller
         $coordinator->make = $request->input('make');
         $coordinator->model = $request->input('model');
         $coordinator->catid = $request->input('catid');
-        $coordinator->user_id = Auth()->id();
+        $coordinator->user_id =  Auth::id();
         if (!empty($request->input('postenddate'))) {
             $coordinator->postenddate = convertdate($request->input('postenddate'), 'Y-m-d H:i:s');
         }
@@ -128,6 +129,11 @@ class CoordinatorController extends Controller
 
         if (!empty($request->file('feature_image'))) {
             $images = $request->file('feature_image');
+
+            if ($images instanceof \Illuminate\Http\UploadedFile) {
+                // If it's a single file, convert it to an array
+                $images = [$images];
+            }
             $i = 1;
             foreach ($images as $key => $image) {
 
@@ -142,12 +148,22 @@ class CoordinatorController extends Controller
                 $i++;
             }
         }
-        if ($request->input('type') == 'admissions') {
+
+        $type = $request->input('type');
+
+// Ensure $type is a string
+if (!is_string($type)) {
+    // Handle the case where $type is not a string
+    $type = 'banners'; // Replace with a default route or handle the error as needed
+}
+
+
+        if ($type === 'admissions') {
             return Redirect::route('editadmissions', ['id' => $coordinator->id])->with('status', ' Content has been saved successfully');
-        } else if ($request->input('type') == 'tenders') {
+        } else if ($type === 'tenders') {
             return Redirect::route('edittenders', ['id' => $coordinator->id])->with('status', ' Content has been saved successfully');
         } else {
-            return Redirect::route($request->input('type'))->with('status', ' Content has been saved successfully');
+            return Redirect::route($type)->with('status', ' Content has been saved successfully');
         }
     }
 
@@ -178,7 +194,7 @@ class CoordinatorController extends Controller
             $coordinator->make = $request->input('make');
             $coordinator->model = $request->input('model');
             $coordinator->catid = $request->input('catid');
-            $coordinator->user_id = Auth()->id();
+            $coordinator->user_id =  Auth::id();
             if (!empty($request->input('postenddate'))) {
                 $coordinator->postenddate = convertdate($request->input('postenddate'), 'Y-m-d H:i:s');
             }
@@ -233,10 +249,15 @@ class CoordinatorController extends Controller
 
             if (!empty($request->file('feature_image'))) {
                 $images = $request->file('feature_image');
+                if ($images instanceof \Illuminate\Http\UploadedFile) {
+                    // If it's a single file, convert it to an array
+                    $images = [$images];
+                }
                 $order = Albumimage::where('albumid', $id)->orderBy('id', 'desc')->first();
                 $i = 1;
                 foreach ($images as $key => $image) {
                     if (!empty($order)) {
+                          //@phpstan-ignore-next-line
                         $sortorder = $order['order'] + $i;
                     } else {
                         $sortorder = $i;
@@ -254,16 +275,28 @@ class CoordinatorController extends Controller
                     $i++;
                 }
             }
+            $type = $request->input('type');
+            // Ensure $type is a string
+if (!is_string($type)) {
+    // Handle the case where $type is not a string
+    $type = 'banners'; // Replace with a default route or handle the error as needed
+}
 
-            if ($request->input('type') == 'admissions') {
+            if ($type === 'admissions') {
                 return Redirect::route('editadmissions', ['id' => $coordinator->id])->with('status', ' Content has been saved successfully');
-            } else if ($request->input('type') == 'tenders') {
+            } else if ($type === 'tenders') {
                 return Redirect::route('edittenders', ['id' => $coordinator->id])->with('status', ' Content has been saved successfully');
             } else {
-                return Redirect::route($request->input('type'))->with('status', ' Content has been saved successfully');
+                return Redirect::route($type)->with('status', ' Content has been saved successfully');
             }
         } else {
-            return Redirect::route($request->input('type'))->with('status', 'Mentioned Id does not exist.');
+            $type = $request->input('type');
+            // Ensure $type is a string
+if (!is_string($type)) {
+    // Handle the case where $type is not a string
+    $type = 'banners'; // Replace with a default route or handle the error as needed
+}
+            return Redirect::route($type)->with('status', 'Mentioned Id does not exist.');
         }
     }
     public function updatedeans(Request $request, int $id): RedirectResponse
@@ -292,7 +325,7 @@ class CoordinatorController extends Controller
             $coordinator->make = $request->input('make');
             $coordinator->model = $request->input('model');
             $coordinator->catid = $request->input('catid');
-            $coordinator->user_id = Auth()->id();
+            $coordinator->user_id =  Auth::id();
             if (!empty($request->input('postenddate'))) {
                 $coordinator->postenddate = convertdate($request->input('postenddate'), 'Y-m-d H:i:s');
             }
@@ -316,15 +349,30 @@ class CoordinatorController extends Controller
 
             $coordinator->save();
 
-            if ($request->input('type') == 'admissions') {
+
+            $type = $request->input('type');
+
+// Ensure $type is a string
+if (!is_string($type)) {
+    // Handle the case where $type is not a string
+    $type = 'banners'; // Replace with a default route or handle the error as needed
+}
+
+            if ($type === 'admissions') {
                 return Redirect::route('editadmissions', ['id' => $coordinator->id])->with('status', ' Content has been saved successfully');
-            } else if ($request->input('type') == 'tenders') {
+            } else if ($type === 'tenders') {
                 return Redirect::route('edittenders', ['id' => $coordinator->id])->with('status', ' Content has been saved successfully');
             } else {
-                return Redirect::route($request->input('type'))->with('status', ' Content has been saved successfully');
+                return Redirect::route($type)->with('status', ' Content has been saved successfully');
             }
         } else {
-            return Redirect::route($request->input('type'))->with('status', 'Mentioned Id does not exist.');
+            $type = $request->input('type');
+            // Ensure $type is a string
+if (!is_string($type)) {
+    // Handle the case where $type is not a string
+    $type = 'banners'; // Replace with a default route or handle the error as needed
+}
+            return Redirect::route($type)->with('status', 'Mentioned Id does not exist.');
         }
     }
 
@@ -335,7 +383,10 @@ class CoordinatorController extends Controller
             $result = Coordinator::where('feature_img', $image)
                 ->select('feature_img')
                 ->first();
+
+              
             if ($result) {
+                  /** @var Coordinator $result */
                 if ($result->feature_img == $image) {
                     $field = 'feature_img';
                 } else {
@@ -980,7 +1031,11 @@ public function createadminstaff(): View|Factory|RedirectResponse
 		if (getcurrentUserRole() != 'users') {
 			return Redirect::route('scientists');
 		}
-		return view('myadmin.mou.createhtml', ['heading' => 'Memorandum Of Understanding'])->with('statusArrays', $this->statusArrays);
+		// return view('myadmin.mou.createhtml', ['heading' => 'Memorandum Of Understanding'])->with('statusArrays', $this->statusArrays);
+        return view('myadmin.mou.createhtml', [
+            'heading' => 'Memorandum Of Understanding',
+            'statusArrays' => $this->statusArrays,
+        ]);
 	}
 	public function editmou(Request $request, int $id): View|Factory|RedirectResponse
 	{
@@ -1156,11 +1211,11 @@ public function createadminstaff(): View|Factory|RedirectResponse
  * @var array<int, array{id: int, position: int, albumid: int}> $orders
  */
         foreach ($orders as $order) {
-            
+             /** @var Albumimage|null $list */
                 $list = Albumimage::where('albumid', $order['albumid'])->where('id', $order['id'])->first();
                 if ($list) {
 
-                    /** @var Albumimage|null $list */
+                    
                     $list->order = $order['position'];
                     $list->save();
                 }
@@ -1529,7 +1584,8 @@ public function createadminstaff(): View|Factory|RedirectResponse
                     $id = $order['id'];
                     $position = $order['position'];
                     $type = $order['type'];
-
+                      
+                    /** @var Coordinator $list */
                     $list = Coordinator::where('id', $id)->where('type', $type)
                         ->firstOrFail();
                     $list->sortorder = $position;

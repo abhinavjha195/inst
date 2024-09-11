@@ -27,8 +27,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property mixed $pdfone
  * @property mixed $pdftwo
  * @property mixed $pdfthree
- * @property mixed $order
- * 
+ * @property mixed $order 
+ * @property mixed $sortorder
  * 
  * 
  *
