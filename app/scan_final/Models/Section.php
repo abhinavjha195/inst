@@ -15,23 +15,14 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
  *
-* @method static \App\Models\Userdetail|null find($id, $columns = ['*'])
- 
+
+ * 
+ * 
  * 
  * 
  */
 
-class Userdetail extends Model
+class Section extends Model
 {
     use HasFactory;
-    
-    protected $fillable = [
-        'userid',
-        'designation',
-        'profilepic',
-        'sectionid',
-        'googlelink',
-        'personalgroupinfo',
-        'aboutme'
-    ]; 
 }

@@ -15,8 +15,9 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $value = null)
  *
-* @method static \App\Models\Userdetail|null find($id, $columns = ['*'])
- 
+
+ * 
+ * 
  * 
  * 
  */

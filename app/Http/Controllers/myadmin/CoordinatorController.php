@@ -22,12 +22,12 @@ class CoordinatorController extends Controller
     /**
      * @var array<string, string>
      */
-    protected array $statusArrays;
+    public array $statusArrays;
 
     /**
      * @var array<string, string>
      */
-    protected array $alumniArrays;
+    public array $alumniArrays;
 
     public function __construct()
     {
@@ -309,7 +309,7 @@ class CoordinatorController extends Controller
         return Response::json(['success' => false]);
     }
 
-    public function indexannualreports(Request $request): View|Factory
+    public function indexannualreports(Request $request): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -320,9 +320,9 @@ class CoordinatorController extends Controller
             $visionary->where('name', 'Like', '%' . request('search') . '%');
         }
         $infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'annualreports')->paginate(20);
-        return view('myadmin.annualreports.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Annual Reports : ' . $infrastructure->count() . ' Records found']);
+        return view('myadmin.annualreports.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Annual Reports : ' . $infrastructure->total() . ' Records found']);
     }
-    public function createannualreports(): View|Factory
+    public function createannualreports(): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -351,7 +351,7 @@ class CoordinatorController extends Controller
 
 
     
-    public function indexannouncements(Request $request): View|Factory
+    public function indexannouncements(Request $request): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -362,9 +362,9 @@ class CoordinatorController extends Controller
             $visionary->where('name', 'Like', '%' . request('search') . '%');
         }
         $infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'announcements')->paginate(20);
-        return view('myadmin.announcements.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Announcements : ' . $infrastructure->count() . ' Records found']);
+        return view('myadmin.announcements.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Announcements : ' . $infrastructure->total() . ' Records found']);
     }
-    public function createannouncements(): View|Factory
+    public function createannouncements(): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -388,7 +388,7 @@ class CoordinatorController extends Controller
         }
     }
 
-    public function indexnewsupdates(Request $request): View|Factory
+    public function indexnewsupdates(Request $request): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -399,9 +399,9 @@ class CoordinatorController extends Controller
             $visionary->where('name', 'Like', '%' . request('search') . '%');
         }
         $infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'newsupdates')->paginate(20);
-        return view('myadmin.newsupdates.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'News & Updates : ' . $infrastructure->count() . ' Records found']);
+        return view('myadmin.newsupdates.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'News & Updates : ' . $infrastructure->total() . ' Records found']);
     }
-    public function createnewsupdates(): View|Factory
+    public function createnewsupdates(): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -425,7 +425,7 @@ class CoordinatorController extends Controller
         }
     }
 
-    public function indexlatestupdates(Request $request): View|Factory
+    public function indexlatestupdates(Request $request): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -436,9 +436,9 @@ class CoordinatorController extends Controller
             $visionary->where('name', 'Like', '%' . request('search') . '%');
         }
         $infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'latestupdates')->paginate(20);
-        return view('myadmin.latestupdates.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Latest Updates : ' . $infrastructure->count() . ' Records found']);
+        return view('myadmin.latestupdates.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Latest Updates : ' . $infrastructure->total() . ' Records found']);
     }
-    public function createlatestupdates(): View|Factory
+    public function createlatestupdates(): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -464,7 +464,7 @@ class CoordinatorController extends Controller
             return Redirect::route('announcements')->with('status', 'Mentioned Id does not exist.');
         }
     }
-    public function indexadminstaff(Request $request): View|Factory
+    public function indexadminstaff(Request $request): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -475,9 +475,9 @@ class CoordinatorController extends Controller
             $visionary->where('name', 'Like', '%' . request('search') . '%');
         }
         $infrastructure =  $visionary->orderBy('order', 'ASC')->where('type', 'adminstaff')->paginate(20);
-        return view('myadmin.admstaffs.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Adminstrative Staff Information : ' . $infrastructure->count() . ' Records found']);
+        return view('myadmin.admstaffs.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Adminstrative Staff Information : ' . $infrastructure->total() . ' Records found']);
     }
-    public function createadminstaff(): View|Factory
+    public function createadminstaff(): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -523,7 +523,7 @@ class CoordinatorController extends Controller
         return Response::json(['status' => 'success']);
     }
     ////////////////////////////////////////////////////////////////////////////////
-    public function indexalbums(Request $request): View|Factory
+    public function indexalbums(Request $request):View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -534,7 +534,7 @@ class CoordinatorController extends Controller
             $visionary->where('name', 'Like', '%' . request('search') . '%');
         }
         $infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'albums')->paginate(20);
-        return view('myadmin.albums.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Campus Tours : ' . $infrastructure->count() . ' Records found']);
+        return view('myadmin.albums.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Campus Tours : ' . $infrastructure->total() . ' Records found']);
     }
     public function createalbums(): View|Factory
     {
@@ -556,7 +556,7 @@ class CoordinatorController extends Controller
             return Redirect::route('albums')->with('status', 'Mentioned Id does not exist.');
         }
     }
-    public function indexbogs(Request $request): View|Factory
+    public function indexbogs(Request $request): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -567,7 +567,7 @@ class CoordinatorController extends Controller
             $visionary->where('name', 'Like', '%' . request('search') . '%');
         }
         $infrastructure =  $visionary->orderBy('order', 'ASC')->where('type', 'bogs')->paginate(40);
-        return view('myadmin.bogs.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Board Of Governors : ' . $infrastructure->count() . ' Records found']);
+        return view('myadmin.bogs.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Board Of Governors : ' . $infrastructure->total() . ' Records found']);
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////
     public function blogUpdateOrders(Request $request): JsonResponse
@@ -626,7 +626,7 @@ class CoordinatorController extends Controller
             $visionary->where('name', 'Like', '%' . request('search') . '%');
         }
         $infrastructure =  $visionary->orderBy('order', 'ASC')->where('type', 'raac')->paginate(40);
-        return view('myadmin.raac.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Research and Academic Advisory Council: ' . $infrastructure->count() . ' Records found']);
+        return view('myadmin.raac.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Research and Academic Advisory Council: ' . $infrastructure->total() . ' Records found']);
     }
     ////////////////////////////////////////////////////////////////////////////////////
     public function raacUpdateOrders(Request $request): JsonResponse
@@ -684,7 +684,7 @@ class CoordinatorController extends Controller
             $visionary->where('name', 'Like', '%' . request('search') . '%');
         }
         $infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'admissions')->paginate(20);
-        return view('myadmin.admissions.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Admissions : ' . $infrastructure->count() . ' Records found']);
+        return view('myadmin.admissions.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Admissions : ' . $infrastructure->total() . ' Records found']);
     }
     public function createadmissions(): View|Factory
     {
@@ -766,19 +766,19 @@ class CoordinatorController extends Controller
             $attachmentfile->move(public_path('userpics'), $attachmentfileName);
         }
 
-        $userDetailsInfo = Albumimage::find($request->albumid);
+        $userDetailsInfo = Albumimage::find($request->input('albumid'));
         // dd($userDetailsInfo);
-        $userDetailsInfo->feature_image = $request->attachmentfile;
-        $userDetailsInfo->tititle = $request->attachmentname;
+        $userDetailsInfo->feature_image = $request->input('attachmentfile');
+        $userDetailsInfo->tititle = $request->input('attachmentname');
         // dd($userDetailsInfo->attachmentname);
-        $userDetailsInfo->isactive = $request->isactive;
+        $userDetailsInfo->isactive = $request->input('isactive');
 
         if (!empty($attachmentfileName)) {
             $userDetailsInfo->feature_image = $attachmentfileName;
         }
 
         $saved = $userDetailsInfo->save();
-        return Redirect::route('admissions', ['id' => $request->albumid])->with('status', ' Content has been updated successfully');
+        return Redirect::route('admissions', ['id' => $request->input('albumid')])->with('status', ' Content has been updated successfully');
     }
 
     ////////////////////////////////////////////////////////////////////
@@ -798,7 +798,7 @@ class CoordinatorController extends Controller
 	}
 
 	////////////////////////////////////////////////////////////////////
-	public function indexmou(Request $request)
+	public function indexmou(Request $request): View|Factory|RedirectResponse
 	{
 		if (getcurrentUserRole() != 'users') {
 			return Redirect::route('scientists');
@@ -809,16 +809,16 @@ class CoordinatorController extends Controller
 			$visionary->where('name', 'Like', '%' . request('search') . '%');
 		}
 		$infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'mou')->paginate(20);
-		return view('myadmin.mou.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Memorandum Of Understanding : ' . $infrastructure->count() . ' Records found']);
+		return view('myadmin.mou.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Memorandum Of Understanding : ' . $infrastructure->total() . ' Records found']);
 	}
-	public function createmou()
+	public function createmou(): View|Factory|RedirectResponse
 	{
 		if (getcurrentUserRole() != 'users') {
 			return Redirect::route('scientists');
 		}
 		return view('myadmin.mou.createhtml', ['heading' => 'Memorandum Of Understanding'])->with('statusArrays', $this->statusArrays);
 	}
-	public function editmou(Request $request, $id)
+	public function editmou(Request $request, $id): View|Factory|RedirectResponse
 	{
 		if (getcurrentUserRole() != 'users') {
 			return Redirect::route('scientists');
@@ -833,7 +833,7 @@ class CoordinatorController extends Controller
 			return Redirect::route('mou')->with('status', 'Mentioned Id does not exist.');
 		}
 	}
-	public function indexhonoraryadjunctfaculty(Request $request)
+	public function indexhonoraryadjunctfaculty(Request $request): View|Factory|RedirectResponse
 	{
 		if (getcurrentUserRole() != 'users') {
 			return Redirect::route('scientists');
@@ -844,7 +844,7 @@ class CoordinatorController extends Controller
 			$visionary->where('coordinators.name', 'Like', '%' . request('search') . '%');
 		}
 		$infrastructure =  $visionary->orderBy('order', 'ASC')->where('coordinators.type', 'honoraryadjunctfaculty')->paginate(20);
-		return view('myadmin.honoraryadjunctfaculty.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Honorary and Adjunct Faculty : ' . $infrastructure->count() . ' Records found']);
+		return view('myadmin.honoraryadjunctfaculty.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Honorary and Adjunct Faculty : ' . $infrastructure->total() . ' Records found']);
 	}
 	/////////////////////////////////////////////////////////////////////////
 	public function honorarysortorder(Request $request)
@@ -876,7 +876,7 @@ class CoordinatorController extends Controller
 
 
 
-    
+
 	/////////////////////////////////////////////////////////////////////////
     public function createhonoraryadjunctfaculty(): View|Factory|RedirectResponse
     {
@@ -1272,7 +1272,7 @@ class CoordinatorController extends Controller
         ]);
     }
 
-    public function editalumni(Request $request, int $id): View|RedirectResponse
+    public function editalumni(Request $request, int $id): View|Factory|RedirectResponse
     {
         $coordinators = Coordinator::where('id', $id)->first();
         if ($coordinators) {

@@ -61,9 +61,15 @@ class ScientistController extends Controller
             ->select(['users.*', 'userdetails.profilepic', 'userdetails.designation'])
             ->where('users.roles', $this->roles)
             ->orderBy('id', 'DESC');
-        if (request('search')) {
-            $userlists->where('users.name', 'LIKE', '%' . request('search') . '%');
-        }
+
+            $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+            if (is_string($search) && $search !== '') {
+                $userlists->where('users.name', 'like', '%' . $search . '%');
+            }
+        // if (request('search')) {
+        //     $userlists->where('users.name', 'LIKE', '%' . request('search') . '%');
+        // }
         $lists = $userlists->paginate(40);
         $totalRecords = $lists->total();
         return view('myadmin.scientists.listhtml', [
@@ -111,6 +117,11 @@ class ScientistController extends Controller
         if (empty($newPassword)) {
             return back()->with("error", "New password is required!");
         }
+
+        // Cast to string and ensure it's non-empty
+if (!is_string($newPassword)) {
+    return back()->with("error", "New password must be a valid non-empty string!");
+}
         User::whereId(Auth::id())->update([
             'password' => Hash::make($newPassword),
             'ispasswordchange' => 1,
@@ -531,9 +542,17 @@ class ScientistController extends Controller
             ->where('userid', Auth::id())
             ->where('researchinterests.type', 'researchpublications')
             ->select(['sections.sectionname', 'researchinterests.*']);
-        if (request('search')) {
-            $lists->where('researchinterests.title', 'LIKE', '%' . request('search') . '%');
-        }
+
+            $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+            if (is_string($search) && $search !== '') {
+                $lists->where('researchinterests.title', 'like', '%' . $search . '%');
+            }
+
+
+        // if (request('search')) {
+        //     $lists->where('researchinterests.title', 'LIKE', '%' . request('search') . '%');
+        // }
         if (request('sectionid')) {
             $lists->where('researchinterests.sectionid', '=', $request->input('sectionid'));
         }
@@ -583,45 +602,104 @@ class ScientistController extends Controller
         ]);
     }
 
+    // public function updatescientistsprofile(Request $request, int $userid): RedirectResponse
+    // {
+    //     $validator = $request->validate(
+    //         [
+    //             'name' => 'required|max:200',
+    //             'profilepic' => 'mimes:png,jpeg,jpg,gif|max:3000'
+    //         ],
+    //         [
+    //             'name.required' => 'The name is required',
+    //             'profilepic.required' => 'The profilepic is required',
+    //         ]
+    //     );
+    //     $userInfo = User::find(Auth::id());
+    //     $httpredirect = $request->input('httpredirect');
+    //     if ($userInfo) {
+    //         $userInfo->sirname = $request->input('sirname');
+    //         $userInfo->name = $request->input('name');
+    //         $userInfo->save();
+    //         $profilepicName = '';
+    //         if ($request->hasFile('profilepic')) {
+    //             $profilepic = $request->file('profilepic');
+    //             if ($profilepic) { // Check if $profilepic is not null
+    //                 $profilepicName = $userid . '_' . time() . '.' . $profilepic->getClientOriginalExtension();
+    //                 $profilepic->move(public_path('userpics'), $profilepicName);
+    //             }
+    //         }
+    //         $userDetailsInfo = UserDetail::find($userid);
+    //         $userDetailsInfo->aboutme = $request->input('aboutme');
+    //         $userDetailsInfo->designation = $request->input('designation');
+    //         $userDetailsInfo->personalgroupinfo = $request->input('personalgroupinfo');
+    //         $userDetailsInfo->googlelink = $request->input('googlelink');
+    //         if (!empty($profilepicName)) {
+    //             $userDetailsInfo->profilepic = $profilepicName;
+    //         }
+    //         $userDetailsInfo->save();
+
+    //         return Redirect::route($httpredirect)->with('status', ' Basic profile has been updated successfully');
+    //     } else {
+    //         return Redirect::route($httpredirect)->with('status', ' Mentioned Id does not exist');
+    //     }
+    // }
+
+
+
     public function updatescientistsprofile(Request $request, int $userid): RedirectResponse
-    {
-        $validator = $request->validate(
-            [
-                'name' => 'required|max:200',
-                'profilepic' => 'mimes:png,jpeg,jpg,gif|max:3000'
-            ],
-            [
-                'name.required' => 'The name is required',
-                'profilepic.required' => 'The profilepic is required',
-            ]
-        );
-        $userInfo = User::find(Auth::id());
-        $httpredirect = $request->input('httpredirect');
-        if ($userInfo) {
-            $userInfo->sirname = $request->input('sirname');
-            $userInfo->name = $request->input('name');
-            $userInfo->save();
-            $profilepicName = '';
-            if ($request->hasFile('profilepic')) {
-                $profilepic = $request->file('profilepic');
+{
+    $validator = $request->validate(
+        [
+            'name' => 'required|max:200',
+            'profilepic' => 'mimes:png,jpeg,jpg,gif|max:3000'
+        ],
+        [
+            'name.required' => 'The name is required',
+            'profilepic.required' => 'The profilepic is required',
+        ]
+    );
+    $userInfo = User::find(Auth::id());
+    $httpredirect = $request->input('httpredirect');
+    if ($userInfo) {
+        $userInfo->sirname = $request->input('sirname');
+        $userInfo->name = $request->input('name');
+        $userInfo->save();
+        $profilepicName = '';
+        if ($request->hasFile('profilepic')) {
+            $profilepic = $request->file('profilepic');
+            if (is_array($profilepic)) {
+                foreach ($profilepic as $pic) {
+                    if ($pic instanceof \Illuminate\Http\UploadedFile) {
+                        $profilepicName = $userid . '_' . time() . '.' . $pic->getClientOriginalExtension();
+                        $pic->move(public_path('userpics'), $profilepicName);
+                    }
+                }
+            } elseif ($profilepic instanceof \Illuminate\Http\UploadedFile) {
                 $profilepicName = $userid . '_' . time() . '.' . $profilepic->getClientOriginalExtension();
                 $profilepic->move(public_path('userpics'), $profilepicName);
             }
-            $userDetailsInfo = UserDetail::find($userid);
-            $userDetailsInfo->aboutme = $request->input('aboutme');
-            $userDetailsInfo->designation = $request->input('designation');
-            $userDetailsInfo->personalgroupinfo = $request->input('personalgroupinfo');
-            $userDetailsInfo->googlelink = $request->input('googlelink');
-            if (!empty($profilepicName)) {
-                $userDetailsInfo->profilepic = $profilepicName;
-            }
-            $userDetailsInfo->save();
-
-            return Redirect::route($httpredirect)->with('status', ' Basic profile has been updated successfully');
-        } else {
-            return Redirect::route($httpredirect)->with('status', ' Mentioned Id does not exist');
         }
+        $userDetailsInfo = UserDetail::find($userid);
+        $userDetailsInfo->aboutme = $request->input('aboutme');
+        $userDetailsInfo->designation = $request->input('designation');
+        $userDetailsInfo->personalgroupinfo = $request->input('personalgroupinfo');
+        $userDetailsInfo->googlelink = $request->input('googlelink');
+        if (!empty($profilepicName)) {
+            $userDetailsInfo->profilepic = $profilepicName;
+        }
+        $userDetailsInfo->save();
+        if (is_string($httpredirect) && !empty($httpredirect)) {
+            return Redirect::route($httpredirect)->with('status', 'Basic profile has been updated successfully');
+        } else {
+            return Redirect::route('banners')->with('status', 'Basic profile has been updated successfully'); // Replace 'default.route' with a valid route
+        }
+    } else {
+        return Redirect::route('banners')->with('status', 'Mentioned Id does not exist'); // Replace 'default.route' with a valid route
     }
+}
+
+
+
 
     public function deleteextrarecords(Request $request): void
     {
@@ -710,13 +788,15 @@ class ScientistController extends Controller
         }
         
         foreach ($imagelists as $key => $imagelist) {
-            $imageName = $key . '_' . uniqid() . '.' . $imagelist->extension();
-            $imagelist->move(public_path('userpics'), $imageName);
-            $userDetailsInfo = new Researchinterest();
-            $userDetailsInfo->type = $request->input('type');
-            $userDetailsInfo->description = $imageName;
-            $userDetailsInfo->userid = Auth::id();
-            $userDetailsInfo->save();
+            if ($imagelist instanceof \Illuminate\Http\UploadedFile) { // Check if the file is valid
+                $imageName = $key . '_' . uniqid() . '.' . $imagelist->getClientOriginalExtension();
+                $imagelist->move(public_path('userpics'), $imageName);
+                $userDetailsInfo = new Researchinterest();
+                $userDetailsInfo->type = $request->input('type');
+                $userDetailsInfo->description = $imageName;
+                $userDetailsInfo->userid = Auth::id();
+                $userDetailsInfo->save();
+            }
         }
         return Response::json(['status' => 'success', 'data' => 'Content has been updated successfully']);
     }
@@ -802,7 +882,7 @@ class ScientistController extends Controller
         }
     }
 
-    public function savescientistresearchgroupByAdmin(Request $request): RedirectResponse
+    public function savescientistresearchgroupByAdmin(Request $request): RedirectResponse|JsonResponse
     {
         if (!empty($request->input('tokenid'))) {
             $findData = Researchgroup::find($request->input('tokenid'));
@@ -895,8 +975,14 @@ class ScientistController extends Controller
         $lists = Researchinterest::join('sections', 'sections.id', '=', 'researchinterests.sectionid')
             ->where(['userid' => Auth::id(), 'researchinterests.type' => 'researchbiodata', 'researchinterests.sectionid' => $sectionid])
             ->select(['sections.sectionname', 'researchinterests.*']);
-        if (request('search')) {
-            $lists->where('researchinterests.description', 'LIKE', '%' . request('search') . '%');
+        // if (request('search')) {
+        //     $lists->where('researchinterests.description', 'LIKE', '%' . request('search') . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $lists->where('researchinterests.description', 'like', '%' . $search . '%');
         }
         $lists = $lists->orderBy('sortorder', 'ASC')->paginate(50);
         // dd($lists); 
@@ -941,9 +1027,18 @@ class ScientistController extends Controller
         $lists = Researchinterest::join('sections', 'sections.id', '=', 'researchinterests.sectionid')
             ->where(['userid' => Auth::id(), 'researchinterests.type' => 'researchbiodata', 'researchinterests.sectionid' => $this->GrantSectionId])
             ->select(['sections.sectionname', 'researchinterests.*']);
-        if (request('search')) {
-            $lists->where('researchinterests.description', 'LIKE', '%' . request('search') . '%');
-        }
+
+
+            $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+            if (is_string($search) && $search !== '') {
+                $lists->where('researchinterests.description', 'like', '%' . $search . '%');
+            }
+
+
+        // if (request('search')) {
+        //     $lists->where('researchinterests.description', 'LIKE', '%' . request('search') . '%');
+        // }
         $lists = $lists->orderBy('sortorder', 'ASC')->paginate(50);
         return view('myadmin.scientists.biodataresearchegranthtml', [
             'lists' => $lists,
@@ -974,7 +1069,7 @@ class ScientistController extends Controller
     {
         $order = $request->input('order');
         if (!is_array($order)) {
-            return response()->json(['error' => 'Invalid order data'], 400);
+            return Response::json(['error' => 'Invalid order data'], 400);
         }
 
         foreach ($order as $item) {
@@ -985,11 +1080,13 @@ class ScientistController extends Controller
 
                 $list = Researchinterest::where('id', $id)->where('type', $type)->first();
                 if ($list) {
+
+                    /** @var Researchinterest $list */
                     $list->sortorder = $position;
                     $list->save();
                 }
             } else {
-                return response()->json(['error' => 'Invalid item structure in order data'], 400);
+                return Response::json(['error' => 'Invalid item structure in order data'], 400);
             }
         }
 

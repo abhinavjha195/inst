@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Model;
  * 
  * @property mixed $isactive
  * @property mixed $sortorder
- * @property mixed $order
 
  * 
  * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)

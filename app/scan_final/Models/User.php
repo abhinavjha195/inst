@@ -50,7 +50,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
  * 
  * 
- * @method static \App\Models\User|null find($id, $columns = ['*'])
+ * @method static \App\Models\Researchinterest|null find($id, $columns = ['*'])
  *
  
  */

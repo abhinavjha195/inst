@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * 
  * @property mixed $name
- * @property mixed $id
  * @property mixed $designation
  * @property mixed $description
  * @property mixed $feature_image
@@ -33,7 +32,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @method static \Illuminate\Database\Eloquent\Builder where($column, $operator = null, $value = null)
  *  @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
- * @method static \App\Models\myadmin\Coordinator|null find($id, $columns = ['*'])
+ * @method static \App\Models\myadmin\Coordinator|null find($id)
  * @method static \Illuminate\Database\Eloquent\Builder join(string $table, string $first, string $operator = '=', string $second = null, string $type = 'inner', string $where = 'and')
  * 
  * 
