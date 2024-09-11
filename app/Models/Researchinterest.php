@@ -22,9 +22,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property mixed $type
  * @property mixed $pi
  * @property mixed $journalname
- * @property mixed $journalcoference
+ * @property mixed $journalconference
  * @property mixed $bookpublisher
  * @property mixed $copi
+ * @property mixed $sirname
  * @property mixed $amount
  * @property mixed $tenure
  * @property mixed $agency
@@ -39,6 +40,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property mixed $surname
  * @property mixed $sortorder
  * @property mixed $postdate
+ * 
  * 
  * 
  * 

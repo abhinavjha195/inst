@@ -84,7 +84,7 @@ class MenuController extends Controller {
     }
 
 	/**
- * @param array<int, array<string, mixed>> $menu
+ * @param array<mixed, array<string, mixed>> $menu
  * @param int $parentid
  */
     protected function updateMenu(array $menu, int $parentid = 0): void {
@@ -149,11 +149,18 @@ class MenuController extends Controller {
 	
 	public function quicklinks(Request $request): View|Factory {
 		
-		$search = $request->query('search');
+		//$search = $request->query('search');
 		$menulist = Quicklink::query();
-        if (request('search')) {
-            $menulist->where('name', 'Like', '%' . request('search') . '%');
-        }
+        // if (request('search')) {
+        //     $menulist->where('name', 'Like', '%' . request('search') . '%');
+        // }
+
+		$search = $request->input('search', ''); // Default to empty string if not provided
+ 
+		if (is_string($search) && $search !== '') {
+			$menulist->where('name', 'like', '%' . $search . '%');
+		}
+		
         $menulists =  $menulist->orderBy('sortorder', 'ASC')->paginate(40);
 		$lists = Post::orderBy('pagename_en')->where('pagetype','pages')->get();
 		return view('myadmin.quicklinkshtml',['menulists' =>$menulists,'lists' =>$lists,'heading'=> 'Quick Links' ] );
@@ -222,7 +229,7 @@ class MenuController extends Controller {
 	
 	public function destroyquicklinks(Request $request, int $id): RedirectResponse {
         Quicklink::where('id', $id)->delete();
-        return redirect()->back()->with('status', ' Content has been removed successfully');
+        return Redirect::back()->with('status', ' Content has been removed successfully');
     }
 	////////////////////////////////////////////////////////
 	public function sortorderquicklinks(Request $request): JsonResponse

@@ -107,7 +107,7 @@ class ScientistController extends Controller
         if (!Hash::check($request->input('old_password'), $user->password)) {
             return back()->with("error", "Old Password Doesn't match!");
         }
-        $newPassword = (string)$request->input('new_password');
+        $newPassword = $request->input('new_password');
         if (empty($newPassword)) {
             return back()->with("error", "New password is required!");
         }
@@ -144,7 +144,7 @@ class ScientistController extends Controller
         $user = new User();
         $user->sirname = $request->input('sirname');
         $user->name = $request->input('name');
-        $user->password = Hash::make((string)$request->input('password'));
+        $user->password = Hash::make($request->input('password'));
         $user->roles = $this->roles;
         $user->email = $request->input('email');
         $user->isactive = $request->input('isactive');

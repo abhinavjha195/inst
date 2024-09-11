@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\myadmin;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\myadmin\Coordinator;
 use App\Models\myadmin\category;
@@ -43,16 +44,21 @@ class ActivitiesController extends Controller
 	{
 
 		$albumid = $request->query('albumid');
-		$search = $request->query('search');
+		//$search = $request->query('search');
 		$Query = Albumimage::query();
-		if (request('search')) {
-			$Query->where('title', 'Like', '%' . request('search') . '%');
-		}
+	
+
+		
+		$search = $request->input('search', ''); // Default to empty string if not provided
+ 
+if (is_string($search) && $search !== '') {
+    $Query->where('title', 'like', '%' . $search . '%');
+}
 		$albuminfo = Coordinator::where('id', $albumid)->where('type', 'albums')->first();
 		if (!$albuminfo) {
 			return Redirect::route('albumimages')->with('status', 'Album not found.'); // Ensure $albuminfo is valid
 		}
-		$lists =  $Query->orderBy('order', 'ASC')->where('albumid', $albumid)->paginate(30)->appends(['albumid' => (string)$albumid]); // Ensure the key is a string
+		$lists =  $Query->orderBy('order', 'ASC')->where('albumid', $albumid)->paginate(30)->appends(['albumid' => $albumid]); // Ensure the key is a string
 
 		return view('myadmin.albumsimages.listhtml', ['lists' => $lists, 'search' => $search, 'albuminfo' => $albuminfo, 'totalrecords' => 'Album ' . ($albuminfo->name ?? 'Unknown') . ' : ' . $lists->total() . ' images found']);
 	}
@@ -166,10 +172,12 @@ class ActivitiesController extends Controller
 	public function indexfaulity(Request $request): View|Factory
 	{
 		$tokenid = $request->query('tokenid');
-		$search = $request->query('search');
+	//	$search = $request->query('search');
 		$Query = Albumimage::query();
-		if (request('search')) {
-			$Query->where('title', 'Like', '%' . request('search') . '%');
+		$search = $request->input('search', ''); // Default to empty string if not provided
+ 
+		if (is_string($search) && $search !== '') {
+			$Query->where('title', 'like', '%' . $search . '%');
 		}
 		$albuminfo = Post::where('id', $tokenid)->first();
 		$lists =  $Query->orderBy('id', 'DESC')->where('albumid', $tokenid)->paginate(30)->appends('albumid', $tokenid);

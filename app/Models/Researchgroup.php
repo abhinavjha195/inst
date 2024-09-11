@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property mixed $userid
  * @property mixed $presentaffiliation
  * @property mixed $isactive
+ * @property mixed $description
 
  * 
  * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
