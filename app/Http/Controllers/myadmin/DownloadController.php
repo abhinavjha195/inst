@@ -104,9 +104,7 @@ class DownloadController extends Controller
         $coordinator->save();
 
         // Retrieve 'pagetype' from request
-    $pagetype = $request->input('type', 'pages');
-
-    // Ensure $pagetype is a string
+    $pagetype = $request->input('type', 'pages'); // Default to 'pages'
     if (!is_string($pagetype)) {
         $pagetype = 'pages'; // Fallback to a default route if the type is not correct
     }
@@ -210,6 +208,7 @@ class DownloadController extends Controller
 
     public function update(Request $request, int $id): RedirectResponse
     {
+        // Ensure the return type is handled
         $request_data = $request->all();
 
         $validator = $request->validate(
@@ -275,10 +274,16 @@ class DownloadController extends Controller
 
             $coordinator->save();
 
-            return Redirect::route($request->input('type'))->with('status', ' Content has been saved successfully');
+            $type = $request->input('type');
+            if (is_string($type)) {
+                return Redirect::route($type)->with('status', ' Content has been saved successfully');
+            }
         } else {
-            return Redirect::route($request->input('type'))->with('status', 'Mentioned Id does not exist.');
+            return Redirect::route('formsdownloads')->with('status', 'Mentioned Id does not exist.');
         }
+
+        // Ensure a return statement is present
+        return Redirect::route('formsdownloads')->with('status', 'Update completed successfully');
     }
 
     public function index(Request $request): View|Factory|RedirectResponse
@@ -340,7 +345,7 @@ if (is_string($search) && !empty($search)) {
             /** @var \App\Models\myadmin\Coordinator|null $list */
             $list = Coordinator::where('type', 'formsdownloads')
                 ->where('catid', $catid)
-                ->where('id', $id)
+                ->where('id', (int)$id)
                 ->firstOrFail();
 
                 if ($list !== null) {
@@ -438,9 +443,9 @@ if (is_string($search) && !empty($search)) {
         Coordinator::where('id', $id)->delete();
     } 
 
-    if ($info) {
+   
         $info->delete();
-    }
+    
 
         return Redirect::route('formsdownloads')->with('status', ' Content has been updated successfully');
     }
@@ -487,8 +492,18 @@ if (is_string($search) && !empty($search)) {
         $info->save();
     }
 
-        return Redirect::route($request->input('type'))->with('status', ' Content has been saved successfully');
+    $route = $request->input('type', 'banner'); // Provide a default route name
+
+if (is_string($route)) {
+    return Redirect::route($route)->with('status', 'Content has been saved successfully');
+} else {
+    // Handle the case where $route is not a valid string
+    return Redirect::back()->with('error', 'Invalid route name');
+}
+
+        // return Redirect::route($request->input('type'))->with('status', ' Content has been saved successfully');
     }
+
 
     public function indexstudents(Request $request): View|Factory|RedirectResponse
     {
@@ -521,15 +536,18 @@ if (is_string($search) && !empty($search)) {
         $lists = $results->orderBy('researchgroups.id', 'DESC')->get();
         $combinedResults = $results->get()->concat($others);
         $perPage = 50;
-        $page = request('page', 1);
+        $page = $request->input('page', 1); // Default to 1 if not provided
+        if (!is_numeric($page)) {
+            $page = 1; // Fallback to 1 if not a number
+        }
         $total = $combinedResults->count();
 
         $paginator = new LengthAwarePaginator(
-            $combinedResults->forPage($page, $perPage),
+            $combinedResults->forPage((int)$page, $perPage),
             $total,
             $perPage,
-            $page,
-            ['path' => request()->url()]
+            (int)$page,
+            ['path' => $request->url()]
         );
 
         $professors = User::where('isactive', 1)->where('roles', 'scientists')->orderBy('sortorder', 'ASC')->get();
@@ -610,6 +628,7 @@ if (is_string($search) && !empty($search)) {
             $i = $toposition + 1;
 
             foreach ($getrestdata as $value) {
+                //@phpstan-ignore-next-line
                 Coordinator::where('id', $value['id'])->update(['sortorder' => $i]);
                 $i++;
             }

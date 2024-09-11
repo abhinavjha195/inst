@@ -35,6 +35,7 @@ class OptionController extends Controller {
                              ->first();
                              
             if ($result) {
+                 /** @var Option $result */
                 $field = $result->featureimage == $image ? 'featureimage' : 'featureimagetwo';
                 Option::where($field, $image)->update([$field => null]);
                 return Response::json(['success' => true]);

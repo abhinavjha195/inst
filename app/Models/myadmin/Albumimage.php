@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  * 
  * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
  * @method static \App\Models\myadmin\Albumimage|null find($id)
+ * @method static \Illuminate\Database\Eloquent\Builder insert(array $values)
  * 
  *
  * Add a basic where clause to the query.

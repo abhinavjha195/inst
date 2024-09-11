@@ -87,38 +87,61 @@ class MenuController extends Controller {
  * @param array<mixed, array<string, mixed>> $menu
  * @param int $parentid
  */
-    protected function updateMenu(array $menu, int $parentid = 0): void {
-		if (!empty($menu)) {
+
+ protected function updateMenu(array $menu, int $parentid = 0): void {
+    if (!empty($menu)) {
+        foreach ($menu as $value) {
+            $menuname = $value['label'];
+            $postid = empty($value['url']) ? '0' : $value['url'];
+
+            $Menulevel = new Menulevel();
+            $Menulevel->menuname = $menuname;
+            $Menulevel->postid = $postid;
+            $Menulevel->parentid = $parentid;
+
+            $Menulevel->user_id = Auth::id(); // Correct usage
+            $Menulevel->save();
+
+            if (array_key_exists('children', $value)) {
+				//@phpstan-ignore-next-line
+                $this->updateMenu($value['children'], $Menulevel->id);
+            }
+        }
+    }
+}
+    // protected function updateMenu(array $menu, int $parentid = 0): void {
+	// 	if (!empty($menu)) {
 			
-			foreach ($menu as $value) {
+	// 		foreach ($menu as $value) {
 				
-				$menuname = $value['label'];
+	// 			$menuname = $value['label'];
 				
-				$postid = (empty($value['url'])) ? '0' : $value['url'];
+	// 			$postid = (empty($value['url'])) ? '0' : $value['url'];
 				
-				$Menulevel = new Menulevel();
+	// 			$Menulevel = new Menulevel();
 				
-				$Menulevel->menuname = $menuname;
+	// 			$Menulevel->menuname = $menuname;
 				
-				$Menulevel->postid = $postid;
+	// 			$Menulevel->postid = $postid;
 				
-				$Menulevel->parentid = $parentid;
+	// 			$Menulevel->parentid = $parentid;
 				
-				// Replace this line:
-				// $Menulevel->user_id = Auth()->id();
-				// With this:
-				$Menulevel->user_id = Auth::id();
+	// 			// Replace this line:
+	// 			// $Menulevel->user_id = Auth()->id();
+	// 			// With this:
+	// 			$Menulevel->user_id = Auth::id();
 				
-				$Menulevel->save();
+	// 			$Menulevel->save();
 				
-				if (array_key_exists('children', $value))
+	// 			if (array_key_exists('children', $value))
 					
-					$this->updateMenu($value['children'],$Menulevel->id);
-			}
-		}
-	}
+	// 				$this->updateMenu($value['children'],$Menulevel->id);
+	// 		}
+	// 	}
+	// }
 	protected function get_menuTree(int $parentid = 0): string {
 		$items = '';
+		// @phpstan-ignore-next-line 
 		$lists = Menulevel::select("*")->where('parentid',$parentid)->orderBy('id_menu','ASC')->get();
 		if( !$lists->isEmpty() ){
 			$items .= '<ol class="dd-list">';

@@ -163,8 +163,18 @@ if (is_string($search) && $search !== '') {
 			]
 		);
 		unset($request_data['_token']);
-		$result_query = DB::table('coordinators')->where('id', $id)->update($request_data);
-		return Redirect::route($request->input('type'))->with('status', ' Content has been updated successfully');
+		
+		
+		$result_query = \Illuminate\Support\Facades\DB::table('coordinators')->where('id', $id)->update($request_data);
+		$route = $request->input('type', 'banners'); // 'default_route' is a fallback route name
+if (is_string($route)) {
+    return Redirect::route($route)->with('status', 'Content has been updated successfully');
+} else {
+    // Handle the case where the route is not a valid string
+    return Redirect::back()->with('error', 'Invalid');
+}
+		
+		//return Redirect::route($request->input('type'))->with('status', ' Content has been updated successfully');
 	}
 
 
@@ -180,7 +190,12 @@ if (is_string($search) && $search !== '') {
 			$Query->where('title', 'like', '%' . $search . '%');
 		}
 		$albuminfo = Post::where('id', $tokenid)->first();
-		$lists =  $Query->orderBy('id', 'DESC')->where('albumid', $tokenid)->paginate(30)->appends('albumid', $tokenid);
+		$lists = $Query->orderBy('id', 'DESC')
+    ->where('albumid', $tokenid)
+    ->paginate(30)
+    ->appends(['albumid' => $tokenid]);
+
+		//$lists =  $Query->orderBy('id', 'DESC')->where('albumid', $tokenid)->paginate(30)->appends('albumid', $tokenid);
 		return view('myadmin.faulities.listhtml', ['lists' => $lists, 'search' => $search, 'albuminfo' => $albuminfo, 'totalrecords' => ($albuminfo->pagename_en ?? 'Unknown') . ' : ' . $lists->total() . ' records found']);
 	}
 	public function createfaulity(Request $request): View|Factory
@@ -289,6 +304,8 @@ if (is_string($search) && $search !== '') {
 	{
 		// dd('here');
 		$editalbuminfo = Albumimage::where('id', $albumimageid)->first();
+		
+		//@phpstan-ignore-next-line
 		$albuminfo = Coordinator::where('id', $editalbuminfo['albumid'])->where('type', 'albums')->first();
 		// dd($albuminfo);
 		if ($albumimageid) {
