@@ -12,7 +12,8 @@ use App\Models\Researchhighlight;
 use App\Models\Researchgroup;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
-use File;
+//use File;
+use Illuminate\Support\Facades\File;
 use Illuminate\Contracts\View\View;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
@@ -25,6 +26,20 @@ use Illuminate\Database\Eloquent\Collection;
 class ScientistController extends Controller
 {
  
+   /**
+     * @var array<string, string>
+     */
+    protected array $statusArrays;
+
+       /**
+     * @var string
+     */
+    protected string $roles;
+
+       /**
+     * @var int
+     */
+    protected int $GrantSectionId;
 
    
 
@@ -50,10 +65,11 @@ class ScientistController extends Controller
             $userlists->where('users.name', 'LIKE', '%' . request('search') . '%');
         }
         $lists = $userlists->paginate(40);
+        $totalRecords = $lists->total();
         return view('myadmin.scientists.listhtml', [
             'lists' => $lists,
             'search' => $search,
-            'totalrecords' => 'Scientists : ' . $lists->count() . ' Records found'
+            'totalrecords' => 'Scientists : ' . $totalRecords . ' Records found'
         ]);
     }
 
@@ -84,11 +100,19 @@ class ScientistController extends Controller
             'old_password' => 'required',
             'new_password' => 'required|confirmed',
         ]);
-        if (!Hash::check($request->old_password, auth()->user()->password)) {
+        $user = Auth::user();
+        if (!$user || !$user->password) {
+            return back()->with("error", "User not authenticated or password not set!");
+        }
+        if (!Hash::check($request->input('old_password'), $user->password)) {
             return back()->with("error", "Old Password Doesn't match!");
         }
-        User::whereId(auth()->user()->id)->update([
-            'password' => Hash::make($request->new_password),
+        $newPassword = (string)$request->input('new_password');
+        if (empty($newPassword)) {
+            return back()->with("error", "New password is required!");
+        }
+        User::whereId(Auth::id())->update([
+            'password' => Hash::make($newPassword),
             'ispasswordchange' => 1,
         ]);
         return back()->with("status", "Password changed successfully!");
@@ -120,18 +144,27 @@ class ScientistController extends Controller
         $user = new User();
         $user->sirname = $request->input('sirname');
         $user->name = $request->input('name');
-        $user->password = Hash::make($request->input('password'));
+        $user->password = Hash::make((string)$request->input('password'));
         $user->roles = $this->roles;
         $user->email = $request->input('email');
         $user->isactive = $request->input('isactive');
         $user->save();
         $profilepicName = '';
         if ($request->hasFile('profilepic')) {
-            $profilepic = $request->file('profilepic');
-            $profilepicName = $user->id . '_' . time() . '.' . $profilepic->extension();
-            $profilepic->move(public_path('userpics'), $profilepicName);
+            $profilepics = $request->file('profilepic');
+            if (is_array($profilepics)) {
+                foreach ($profilepics as $profilepic) {
+                    if ($profilepic instanceof \Illuminate\Http\UploadedFile) {
+                        $profilepicName = $user->id . '_' . time() . '.' . $profilepic->getClientOriginalExtension();
+                        $profilepic->move(public_path('userpics'), $profilepicName);
+                    }
+                }
+            } elseif ($profilepics instanceof \Illuminate\Http\UploadedFile) {
+                $profilepicName = $user->id . '_' . time() . '.' . $profilepics->getClientOriginalExtension();
+                $profilepics->move(public_path('userpics'), $profilepicName);
+            }
         }
-        Userdetail::create([
+        UserDetail::create([
             'userid' => $user->id,
             'sectionid' => $request->input('sectionid'),
             'designation' => $request->input('designation'),
@@ -207,10 +240,13 @@ class ScientistController extends Controller
             ->first();
 
         if ($userInfo) {
+             /** @var User $userInfo */
+            if($userInfo->name){
             $userInfo->name = $request->input('name');
+            }
             $userInfo->sirname = $request->input('sirname');
             if ($updatePassword) {
-                $userInfo->password = Hash::make($request->input('password_confirmation'));
+                $userInfo->password = Hash::make((string)$request->input('password_confirmation'));
             }
             $userInfo->roles = $this->roles;
             $userInfo->email = $request->input('email');
@@ -218,9 +254,18 @@ class ScientistController extends Controller
             $userInfo->save();
             $profilepicName = '';
             if ($request->hasFile('profilepic')) {
-                $profilepic = $request->file('profilepic');
-                $profilepicName = $userid . '_' . time() . '.' . $profilepic->extension();
-                $profilepic->move(public_path('userpics'), $profilepicName);
+                $profilepics = $request->file('profilepic');
+                if (is_array($profilepics)) {
+                    foreach ($profilepics as $profilepic) {
+                        if ($profilepic instanceof \Illuminate\Http\UploadedFile) {
+                            $profilepicName = $userid . '_' . time() . '.' . $profilepic->getClientOriginalExtension();
+                            $profilepic->move(public_path('userpics'), $profilepicName);
+                        }
+                    }
+                } elseif ($profilepics instanceof \Illuminate\Http\UploadedFile) {
+                    $profilepicName = $userid . '_' . time() . '.' . $profilepics->getClientOriginalExtension();
+                    $profilepics->move(public_path('userpics'), $profilepicName);
+                }
             }
             if (!empty($profilepicName)) {
                 UserDetail::where('userid', $userid)
@@ -254,7 +299,8 @@ class ScientistController extends Controller
 
         if ($tag == 'researchgroups') {
             $info = Researchgroup::where('userid', Auth::id())->where('id', $id)->first();
-            if ($info && $info->interimage != "") {
+              /** @var Researchgroup $info */
+            if ($info->interimage) {
                 File::delete(public_path('userpics') . '/' . $info->interimage);
                 Researchgroup::where('id', $id)->delete();
             }
@@ -262,7 +308,8 @@ class ScientistController extends Controller
             Researchinterest::where('id', $id)->delete();
         } else if ($tag == 'relatedimages') {
             $info = Researchinterest::where('userid', Auth::id())->where('id', $id)->where('type', 'relatedimages')->first();
-            if ($info && $info->description != "") {
+            /** @var Researchgroup $info */
+            if ($info->description != "") {
                 File::delete(public_path('userpics') . '/' . $info->description);
                 Researchinterest::where('id', $id)->delete();
             }
@@ -291,7 +338,8 @@ class ScientistController extends Controller
         }
 
         $user = Auth::user();
-        if ($user && $user->ispasswordchange == 0) {
+        /** @var User $user */
+        if ($user->ispasswordchange === 0) {
             return Redirect::route('sientistchangepassword');
         }
 
@@ -314,7 +362,8 @@ class ScientistController extends Controller
         }
 
         $user = Auth::user();
-        if ($user && $user->ispasswordchange == 0) {
+          /** @var User $user */
+        if ($user->ispasswordchange === 0) {
             return Redirect::route('sientistchangepassword');
         }
 
@@ -336,7 +385,8 @@ class ScientistController extends Controller
         }
 
         $user = Auth::user();
-        if ($user && $user->ispasswordchange == 0) {
+          /** @var User $user */
+        if ($user->ispasswordchange === 0) {
             return Redirect::route('sientistchangepassword');
         }
 
@@ -373,7 +423,8 @@ class ScientistController extends Controller
         }
 
         $user = Auth::user();
-        if ($user && $user->ispasswordchange == 0) {
+          /** @var User $user */
+        if ($user->ispasswordchange === 0) {
             return Redirect::route('sientistchangepassword');
         }
 
@@ -410,7 +461,8 @@ class ScientistController extends Controller
         }
 
         $user = Auth::user();
-        if ($user && $user->ispasswordchange == 0) {
+          /** @var User $user */
+        if ($user->ispasswordchange === 0) {
             return Redirect::route('sientistchangepassword');
         }
 
@@ -469,7 +521,8 @@ class ScientistController extends Controller
         }
 
         $user = Auth::user();
-        if ($user && $user->ispasswordchange == 0) {
+          /** @var User $user */
+        if ($user->ispasswordchange === 0) {
             return Redirect::route('sientistchangepassword');
         }
 
@@ -551,7 +604,7 @@ class ScientistController extends Controller
             $profilepicName = '';
             if ($request->hasFile('profilepic')) {
                 $profilepic = $request->file('profilepic');
-                $profilepicName = $userid . '_' . time() . '.' . $profilepic->extension();
+                $profilepicName = $userid . '_' . time() . '.' . $profilepic->getClientOriginalExtension();
                 $profilepic->move(public_path('userpics'), $profilepicName);
             }
             $userDetailsInfo = UserDetail::find($userid);
@@ -688,10 +741,17 @@ class ScientistController extends Controller
                 $findData->sectionid = $request->input('sectionid');
                 $interimageName = '';
                 if ($request->hasFile('interimage')) {
-                    $interimage = $request->file('interimage');
-                    if ($interimage instanceof \Illuminate\Http\UploadedFile) {
-                        $interimageName = Auth::id() . '_' . time() . '.' . $interimage->getClientOriginalExtension();
-                        $interimage->move(public_path('userpics'), $interimageName);
+                    $interimages = $request->file('interimage');
+                    if (is_array($interimages)) {
+                        foreach ($interimages as $interimage) {
+                            if ($interimage instanceof \Illuminate\Http\UploadedFile) {
+                                $interimageName = Auth::id() . '_' . time() . '.' . $interimage->getClientOriginalExtension();
+                                $interimage->move(public_path('userpics'), $interimageName);
+                            }
+                        }
+                    } elseif ($interimages instanceof \Illuminate\Http\UploadedFile) {
+                        $interimageName = Auth::id() . '_' . time() . '.' . $interimages->getClientOriginalExtension();
+                        $interimages->move(public_path('userpics'), $interimageName);
                     }
                 }
                 if (!empty($interimageName)) {
@@ -720,10 +780,17 @@ class ScientistController extends Controller
 
             $interimageName = '';
             if ($request->hasFile('interimage')) {
-                $interimage = $request->file('interimage');
-                if ($interimage instanceof \Illuminate\Http\UploadedFile) {
-                    $interimageName = Auth::id() . '_' . time() . '.' . $interimage->getClientOriginalExtension();
-                    $interimage->move(public_path('userpics'), $interimageName);
+                $interimages = $request->file('interimage');
+                if (is_array($interimages)) {
+                    foreach ($interimages as $interimage) {
+                        if ($interimage instanceof \Illuminate\Http\UploadedFile) {
+                            $interimageName = Auth::id() . '_' . time() . '.' . $interimage->getClientOriginalExtension();
+                            $interimage->move(public_path('userpics'), $interimageName);
+                        }
+                    }
+                } elseif ($interimages instanceof \Illuminate\Http\UploadedFile) {
+                    $interimageName = Auth::id() . '_' . time() . '.' . $interimages->getClientOriginalExtension();
+                    $interimages->move(public_path('userpics'), $interimageName);
                 }
             }
             $userDetailsInfo->userid = Auth::id();
@@ -753,10 +820,17 @@ class ScientistController extends Controller
                 $findData->sectionid = $request->input('sectionid');
                 $interimageName = '';
                 if ($request->hasFile('interimage')) {
-                    $interimage = $request->file('interimage');
-                    if ($interimage instanceof \Illuminate\Http\UploadedFile) {
-                        $interimageName = $request->input('userid') . '_' . time() . '.' . $interimage->getClientOriginalExtension();
-                        $interimage->move(public_path('userpics'), $interimageName);
+                    $interimages = $request->file('interimage');
+                    if (is_array($interimages)) {
+                        foreach ($interimages as $interimage) {
+                            if ($interimage instanceof \Illuminate\Http\UploadedFile) {
+                                $interimageName = Auth::id() . '_' . time() . '.' . $interimage->getClientOriginalExtension();
+                                $interimage->move(public_path('userpics'), $interimageName);
+                            }
+                        }
+                    } elseif ($interimages instanceof \Illuminate\Http\UploadedFile) {
+                        $interimageName = Auth::id() . '_' . time() . '.' . $interimages->getClientOriginalExtension();
+                        $interimages->move(public_path('userpics'), $interimageName);
                     }
                 }
                 if (!empty($interimageName)) {
@@ -782,13 +856,20 @@ class ScientistController extends Controller
 
             $interimageName = '';
             if ($request->hasFile('interimage')) {
-                $interimage = $request->file('interimage');
-                if ($interimage instanceof \Illuminate\Http\UploadedFile) {
-                    $interimageName = $request->input('userid') . '_' . time() . '.' . $interimage->getClientOriginalExtension();
-                    $interimage->move(public_path('userpics'), $interimageName);
+                $interimages = $request->file('interimage');
+                if (is_array($interimages)) {
+                    foreach ($interimages as $interimage) {
+                        if ($interimage instanceof \Illuminate\Http\UploadedFile) {
+                            $interimageName = Auth::id() . '_' . time() . '.' . $interimage->getClientOriginalExtension();
+                            $interimage->move(public_path('userpics'), $interimageName);
+                        }
+                    }
+                } elseif ($interimages instanceof \Illuminate\Http\UploadedFile) {
+                    $interimageName = Auth::id() . '_' . time() . '.' . $interimages->getClientOriginalExtension();
+                    $interimages->move(public_path('userpics'), $interimageName);
                 }
             }
-            $userDetailsInfo->userid = $request->input('userid');
+            $userDetailsInfo->userid = Auth::id();
             if (!empty($interimageName)) {
                 $userDetailsInfo->interimage = $interimageName;
             }
@@ -804,7 +885,8 @@ class ScientistController extends Controller
         }
 
         $user = Auth::user();
-        if ($user && $user->ispasswordchange == 0) {
+          /** @var User $user */
+        if ($user->ispasswordchange === 0) {
             return Redirect::route('sientistchangepassword');
         }
 
@@ -851,7 +933,8 @@ class ScientistController extends Controller
         }
 
         $user = Auth::user();
-        if ($user && $user->ispasswordchange == 0) {
+          /** @var User $user */
+        if ($user->ispasswordchange === 0) {
             return Redirect::route('sientistchangepassword');
         }
 
@@ -889,20 +972,26 @@ class ScientistController extends Controller
 
     public function scientistUpdateOrder(Request $request): JsonResponse
     {
-        $orders = $request->input('order');
-	
-        foreach ($orders as $order) {
-            $id = $order['id'];
-            $position = $order['position'];
-            $type = $order['type'];
-
-            $list = Researchinterest::where('id', $id)->where('type', $type)
-                ->firstOrFail();
-                
-            $list->sortorder = $position;
-            $list->save();
+        $order = $request->input('order');
+        if (!is_array($order)) {
+            return response()->json(['error' => 'Invalid order data'], 400);
         }
-		// die;
+
+        foreach ($order as $item) {
+            if (is_array($item) && isset($item['id'], $item['position'], $item['type'])) {
+                $id = $item['id'];
+                $position = $item['position'];
+                $type = $item['type'];
+
+                $list = Researchinterest::where('id', $id)->where('type', $type)->first();
+                if ($list) {
+                    $list->sortorder = $position;
+                    $list->save();
+                }
+            } else {
+                return response()->json(['error' => 'Invalid item structure in order data'], 400);
+            }
+        }
 
         return Response::json(['status' => 'success']);
     }

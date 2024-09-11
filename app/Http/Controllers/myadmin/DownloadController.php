@@ -418,9 +418,10 @@ if (is_string($search) && !empty($search)) {
     }
 
       // Check if $info is not null
+      /** @var Coordinator $info */
     if ($info !== null) {
         // Check if the pdftwo property is not empty
-        if ($info->pdftwo != "") {
+        if ($info->pdftwo != "") { 
             $filePath = public_path('userpics/downloads') . '/' . $info->pdftwo;
 
             // Ensure the file exists before attempting to delete it

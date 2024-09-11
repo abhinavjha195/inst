@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
  * 
  * @method static \Illuminate\Database\Eloquent\Builder where(array|string $conditions, mixed $value = null, string $operator = '=')
  * @method static \Illuminate\Database\Eloquent\Builder join(string $table, string $first, string $operator = '=', string $second = null, string $type = 'inner', string $where = 'and')
- *
+ *@method static \App\Models\Researchinterest|null find($id, $columns = ['*'])
  * 
  * 
  * 
@@ -38,6 +38,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property mixed $name
  * @property mixed $surname
  * @property mixed $sortorder
+ * @property mixed $postdate
  * 
  * 
  * 

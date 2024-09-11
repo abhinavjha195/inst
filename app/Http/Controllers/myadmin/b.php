@@ -257,28 +257,34 @@ class CoordinatorController extends Controller
 		$infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'mou')->paginate(20);
 		return view('myadmin.mou.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Memorandum Of Understanding : ' . $infrastructure->count() . ' Records found']);
 	}
-	public function createmou():View|Factory
-	{
-		if (getcurrentUserRole() != 'users') {
-			return Redirect::route('scientists');
-		}
-		return view('myadmin.mou.createhtml', ['heading' => 'Memorandum Of Understanding'])->with('statusArrays', $this->statusArrays);
-	}
-	public function editmou(Request $request, int $id):View|Factory|RedirectResponse
-	{
-		if (getcurrentUserRole() != 'users') {
-			return Redirect::route('scientists');
-		}
-		$coordinators = Coordinator::where('id', $id)->first();
-		if ($coordinators) {
-			return view('myadmin.mou.edithtml')
-				->with('heading', 'Memorandum Of Understanding')
-				->with('statusArrays', $this->statusArrays)
-				->with('info', $coordinators);
-		} else {
-			return Redirect::route('mou')->with('status', 'Mentioned Id does not exist.');
-		}
-	}
+	public function createmou(): View|Factory
+{
+    if (getcurrentUserRole() != 'users') {
+        return Redirect::route('scientists');
+    }
+    return view('myadmin.mou.createhtml', [
+        'heading' => 'Memorandum Of Understanding',
+        'statusArrays' => $this->statusArrays
+    ]);
+}
+
+public function editmou(Request $request, int $id): View|Factory|RedirectResponse
+{
+    if (getcurrentUserRole() != 'users') {
+        return Redirect::route('scientists');
+    }
+    $coordinators = Coordinator::where('id', $id)->first();
+    if ($coordinators) {
+        return view('myadmin.mou.edithtml', [
+            'heading' => 'Memorandum Of Understanding',
+            'statusArrays' => $this->statusArrays,
+            'info' => $coordinators
+        ]);
+    } else {
+        return Redirect::route('mou')->with('status', 'Mentioned Id does not exist.');
+    }
+}
+
 	public function indexhonoraryadjunctfaculty(Request $request):View|Factory
 	{
 		if (getcurrentUserRole() != 'users') {

@@ -49,6 +49,8 @@ use Laravel\Sanctum\HasApiTokens;
  * 
  * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
  * 
+ * 
+ * @method static \App\Models\Researchinterest|null find($id, $columns = ['*'])
  *
  
  */
@@ -88,6 +90,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'ispasswordchange' => 'boolean',
     ];
 
     public function banners(){

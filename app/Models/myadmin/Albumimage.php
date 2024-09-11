@@ -42,5 +42,5 @@ class Albumimage extends Model
 	public function user() {
         return $this->belongsTo(User::class);
     }
-	protected $fillable = ['albumid'];
+	protected $fillable = ['albumid','photoname'];
 }

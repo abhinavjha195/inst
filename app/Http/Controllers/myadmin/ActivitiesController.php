@@ -39,7 +39,7 @@ class ActivitiesController extends Controller
             ->orderBy('catname', 'ASC')
             ->get());
     }
-	public function index(Request $request): View|Factory
+	public function index(Request $request): View|Factory|RedirectResponse
 	{
 
 		$albumid = $request->query('albumid');
@@ -52,7 +52,7 @@ class ActivitiesController extends Controller
 		if (!$albuminfo) {
 			return Redirect::route('albumimages')->with('status', 'Album not found.'); // Ensure $albuminfo is valid
 		}
-		$lists =  $Query->orderBy('order', 'ASC')->where('albumid', $albumid)->paginate(30)->appends(['albumid' => $albumid]); // Ensure the key is a string
+		$lists =  $Query->orderBy('order', 'ASC')->where('albumid', $albumid)->paginate(30)->appends(['albumid' => (string)$albumid]); // Ensure the key is a string
 
 		return view('myadmin.albumsimages.listhtml', ['lists' => $lists, 'search' => $search, 'albuminfo' => $albuminfo, 'totalrecords' => 'Album ' . ($albuminfo->name ?? 'Unknown') . ' : ' . $lists->total() . ' images found']);
 	}
@@ -85,38 +85,8 @@ class ActivitiesController extends Controller
 			return Redirect::route('albumimages')->with('status', 'Mentioned Id does not exist.');
 		}
 	}
-	// public function store(Request $request) {
-	// 	$validator = $request->validate(
-	// 		[
-	// 			'albumid' => 'required|max:100',
-	// 			'subimagesarray' => 'required',
-	// 		], 
-	// 		[
-	// 			'albumid.required' => 'The album name is required',
-	// 			'subimagesarray.required' => 'The Image Image is required',
-	// 		]
-	// 	);
-	// 	$albumid = $request->albumid;
-	// 	$tititle = $request->name;
-	// 	$captionsarray = $request->subimagesarray;
-	// 	if( !empty($captionsarray) ) {
-	// 		$image_urls = explode(',',$captionsarray);
-	// 		foreach ($image_urls as $image_url ):
-	// 			$image_url_params[] = array(
-	// 				'albumid' => $albumid,
-	// 				'tititle' => $tititle,
-	// 				'isactive' => 1,
-	// 				'created_at' => date('Y-m-d H:i:s'),
-	// 				'feature_image' => str_replace(array('["','"]','"'),array(''),$image_url)
-	// 			);
-	// 		endforeach;
-	// 		Albumimage::insert($image_url_params);
-	// 	}
-	// 	return redirect()->route('albumimages',['albumid' =>$albumid])->with('status', ' Content has been saved successfully');
-	// }
 	public function store(Request $request): RedirectResponse
 	{
-
 		$validator = $request->validate([
 			'albumid' => 'required|max:100',
 			'feature_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -127,8 +97,14 @@ class ActivitiesController extends Controller
 		$name = $request->input('name');
 		$photoname = $request->input('photoname');
 		$campus = '';
-		if (!empty($request->file('feature_image'))) {
-			$feature_image = $request->file('feature_image');
+
+		// Ensure $request->file('feature_image') is not an array
+		$feature_image = $request->file('feature_image');
+		if (is_array($feature_image)) {
+			$feature_image = $feature_image[0]; // Take the first file if it's an array
+		}
+
+		if ($feature_image instanceof \Illuminate\Http\UploadedFile) {
 			$campus = time() . '.' . $feature_image->getClientOriginalExtension();
 			$feature_image->move(public_path('/uploads/campus-tour'), $campus);
 		}
@@ -139,11 +115,11 @@ class ActivitiesController extends Controller
 			'tititle' => $name,
 			'photoname' => $photoname,
 			'isactive' => 1,
-			'created_at' => date('Y-m-d H:i:s'),
+			'created_at' => now(), // Use now() for current timestamp
 			'feature_image' => $image_path,
 		];
 
-		$save = Albumimage::insert($image_data);
+		Albumimage::insert([$image_data]); // Wrap in an array for insert
 		return Redirect::route('albumimages', ['albumid' => $albumid])
 			->with('status', 'Content has been saved successfully');
 	}
@@ -197,7 +173,7 @@ class ActivitiesController extends Controller
 		}
 		$albuminfo = Post::where('id', $tokenid)->first();
 		$lists =  $Query->orderBy('id', 'DESC')->where('albumid', $tokenid)->paginate(30)->appends('albumid', $tokenid);
-		return view('myadmin.faulities.listhtml', ['lists' => $lists, 'search' => $search, 'albuminfo' => $albuminfo, 'totalrecords' => $albuminfo->pagename_en . ' : ' . $lists->total() . ' records found']);
+		return view('myadmin.faulities.listhtml', ['lists' => $lists, 'search' => $search, 'albuminfo' => $albuminfo, 'totalrecords' => ($albuminfo->pagename_en ?? 'Unknown') . ' : ' . $lists->total() . ' records found']);
 	}
 	public function createfaulity(Request $request): View|Factory
 	{
@@ -207,7 +183,7 @@ class ActivitiesController extends Controller
 			'myadmin.faulities.createhtml',
 			[
 				'statusArrays' => $this->statusArrays,
-				'heading' => $albuminfo->pagename_en . ': faculities',
+				'heading' => $albuminfo->pagename_en ?? '',
 				'albuminfo' => $albuminfo,
 			]
 		);
@@ -220,7 +196,7 @@ class ActivitiesController extends Controller
 				'myadmin.faulities.edithtml',
 				[
 					'statusArrays' => $this->statusArrays,
-					'heading' => $albuminfo->pagename_en ?? 'Default Heading', // Use null coalescing operator
+					'heading' => $albuminfo->pagename_en ?? '',
 					'info' => $albuminfo
 				]
 			);
@@ -361,16 +337,20 @@ class ActivitiesController extends Controller
 			'created_at' => date('Y-m-d H:i:s'),
 			'feature_image' => $image_path,
 		];
-		// dd($getimg['albumid']);
+		
 		$update = Albumimage::where('id', $request->input('albumId'))->first();
 		if (!$update) {
 			return Redirect::route('albumimages')->with('status', 'Album image not found for update.');
 		}
+		
+		// Update properties
+		/** @var Albumimage $update */
+$update->tititle = $name ?? '';  // PHPStan understands that $tititle exists
+$update->photoname = $photoname ?? '';  // PHPStan understands that $photoname exists
+$update->feature_image = $image_path;  // PHPStan understands that $feature_image exists
 
-		$update->tititle = $name ?? ''; // Use empty string if $name is null
-		$update->photoname = $photoname ?? ''; // Use empty string if $photoname is null
-		$update->feature_image = $image_path;
-
+		
+		// Save the updated model
 		$update->save();
 		return Redirect::route('albumimages', ['albumid' => $getimg->albumid ?? ''])
 			->with('status', 'Content has been Updated successfully');

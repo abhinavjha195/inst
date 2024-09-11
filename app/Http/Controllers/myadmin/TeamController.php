@@ -14,7 +14,8 @@ use App\Models\Researchhighlight;
 use App\Models\Researchgroup;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
-use File;
+//use File;
+use Illuminate\Support\Facades\File;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -104,7 +105,9 @@ class TeamController extends Controller {
 	public function destroy(Request $request, int $id): RedirectResponse {
 		if($request->input('tag') == 'researchgroups') {
             $info  = Researchgroup::where('userid', $request->input('userid'))->where('id',$id)->first();
-            if ($info && $info->interimage != "") {
+            
+            /** @var Researchgroup $info */
+            if ($info->interimage != "") {
                 if (File::exists(public_path('userpics') . '/' . $info->interimage)) {
                     File::delete(public_path('userpics') . '/' . $info->interimage);
                 }
@@ -114,7 +117,9 @@ class TeamController extends Controller {
             Researchinterest::where('id',$id)->delete();
         } else if($request->input('tag') == 'relatedimages') {
             $info  = Researchinterest::where('userid', $request->input('userid'))->where('id',$id)->where('type','relatedimages')->first();
-            if ($info && $info->description != "") {
+          
+          /** @var Researchinterest $info */
+            if ($info->description != "") {
                 if (File::exists(public_path('userpics') . '/' . $info->description)) {
                     File::delete(public_path('userpics') . '/' . $info->description);
                 }
@@ -515,10 +520,12 @@ class TeamController extends Controller {
                 return Response::json(['status' => true, 'message' => 'Issue with update, refresh the page and try again'], 200);
             }
         } else {
+
             $getlast = Researchinterest::where('type', $request->input('type'))
                                        ->where('userid', $request->input('userid'))
                                        ->orderBy('sortorder', 'DESC')
                                        ->first();
+                                        /** @var Researchinterest $getlast */
             $sortorder = $getlast ? ($getlast->sortorder + 1) : 1;
 
             $userDetailsInfo = new Researchinterest();
@@ -614,7 +621,7 @@ class TeamController extends Controller {
          */
         $orders = $request->input('order', []);
         foreach ($orders as $order) {
-            
+             
             $id = $order['id'];
             $position = $order['position'];
             $type = $order['type'];
