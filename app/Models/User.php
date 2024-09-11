@@ -41,6 +41,8 @@ use Laravel\Sanctum\HasApiTokens;
  * 
  *  @method static \App\Models\User findOrFail(mixed $id)
  *  @method static \Illuminate\Database\Eloquent\Builder join(string $table, string $first, string $operator = null, string $second = null, string $type = 'inner', bool $where = false)
+ * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, array $values)
+ * @method static \Illuminate\Database\Eloquent\Builder whereId(mixed $id)
  * 
  * Finds a user by their primary key. If no user is found, an exception is thrown.
  * 

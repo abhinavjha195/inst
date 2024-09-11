@@ -10,6 +10,14 @@ use Illuminate\Database\Eloquent\Model;
  * Add a basic where clause to the query.
  *
 
+ *
+
+ * 
+ * @property mixed $aboutme
+ * @property mixed $designation
+ * @property mixed $personalgroupinfo
+ * @property mixed $googlelink
+ * @property mixed $profilepic
  * 
  * @method static \Illuminate\Database\Eloquent\Builder whereIn(string $column, mixed $values)
  *
@@ -17,7 +25,7 @@ use Illuminate\Database\Eloquent\Model;
  *
 * @method static \App\Models\Userdetail|null find($id, $columns = ['*'])
  
- * 
+ * @method static \App\Models\Userdetail create(array $attributes = [])
  * 
  */
 

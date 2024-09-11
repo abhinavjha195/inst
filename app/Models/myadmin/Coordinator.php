@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 
 
 /**
- * 
+ * @property mixed $subtitle
  * @property mixed $name
  * @property mixed $id
  * @property mixed $designation
  * @property mixed $description
+ * @property mixed $descriptionOne
+ * @property mixed $feature_img
  * @property mixed $feature_image
  * @property mixed $isactive
  * @property mixed $type
@@ -26,6 +28,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property mixed $pdftwo
  * @property mixed $pdfthree
  * @property mixed $order
+ * 
  * 
  * 
  *
@@ -47,6 +50,6 @@ class Coordinator extends Model
     use HasFactory;
     protected $fillable = [
         
-        'order'
+        'order','subtitle'
     ];
 }

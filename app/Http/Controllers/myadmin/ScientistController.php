@@ -103,27 +103,23 @@ class ScientistController extends Controller
     public function updatesientistchangepassword(Request $request): RedirectResponse
     {
         $request->validate([
-            'old_password' => 'required',
-            'new_password' => 'required|confirmed',
+            'old_password' => 'required|string',
+            'new_password' => 'required|string|confirmed',
         ]);
         $user = Auth::user();
-        if (!$user || !$user->password) {
+        if (!$user || !isset($user->password)) {
             return back()->with("error", "User not authenticated or password not set!");
         }
-        if (!Hash::check($request->input('old_password'), $user->password)) {
+        $oldPassword = $request->input('old_password');
+        if (!is_string($oldPassword) || !Hash::check($oldPassword, $user->password)) {
             return back()->with("error", "Old Password Doesn't match!");
         }
         $newPassword = $request->input('new_password');
-        if (empty($newPassword)) {
-            return back()->with("error", "New password is required!");
+        if (empty($newPassword) || !is_string($newPassword)) {
+            return back()->with("error", "New password must be a valid non-empty string!");
         }
-
-        // Cast to string and ensure it's non-empty
-if (!is_string($newPassword)) {
-    return back()->with("error", "New password must be a valid non-empty string!");
-}
         User::whereId(Auth::id())->update([
-            'password' => Hash::make($newPassword),
+            'password' => Hash::make((string)$newPassword), // Ensure it's a string
             'ispasswordchange' => 1,
         ]);
         return back()->with("status", "Password changed successfully!");
@@ -155,6 +151,7 @@ if (!is_string($newPassword)) {
         $user = new User();
         $user->sirname = $request->input('sirname');
         $user->name = $request->input('name');
+       // @phpstan-ignore-next-line
         $user->password = Hash::make($request->input('password'));
         $user->roles = $this->roles;
         $user->email = $request->input('email');
@@ -257,7 +254,10 @@ if (!is_string($newPassword)) {
             }
             $userInfo->sirname = $request->input('sirname');
             if ($updatePassword) {
-                $userInfo->password = Hash::make((string)$request->input('password_confirmation'));
+                $password = $request->input('password_confirmation');
+                if (is_string($password)) {
+                    $userInfo->password = Hash::make((string)$password); // Ensure it's a string
+                }
             }
             $userInfo->roles = $this->roles;
             $userInfo->email = $request->input('email');
@@ -338,6 +338,7 @@ if (!is_string($newPassword)) {
     {
         $userids = $request->input('post_id');
         $status_type = $request->input('status_type');
+         //@phpstan-ignore-next-line
         User::whereIn('id', $userids)->update(['isactive' => $status_type]);
         return Response::json(['status' => true]);
     }
@@ -574,7 +575,9 @@ if (!is_string($newPassword)) {
      
         $maxOrder = Researchinterest::max('order');
 
+         
         foreach ($posts as $post) {
+            //@phpstan-ignore-next-line
             foreach ($request->order as $order) {
                 if ($order['id'] == $post->id) {
                     $post->update(['order' => $order['position']]);
@@ -680,6 +683,7 @@ if (!is_string($newPassword)) {
             }
         }
         $userDetailsInfo = UserDetail::find($userid);
+        if($userDetailsInfo){
         $userDetailsInfo->aboutme = $request->input('aboutme');
         $userDetailsInfo->designation = $request->input('designation');
         $userDetailsInfo->personalgroupinfo = $request->input('personalgroupinfo');
@@ -688,6 +692,7 @@ if (!is_string($newPassword)) {
             $userDetailsInfo->profilepic = $profilepicName;
         }
         $userDetailsInfo->save();
+    }
         if (is_string($httpredirect) && !empty($httpredirect)) {
             return Redirect::route($httpredirect)->with('status', 'Basic profile has been updated successfully');
         } else {

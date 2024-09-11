@@ -72,28 +72,49 @@ class CoordinatorController extends Controller
 
 
 
-        if (!empty($request->file('pdfone'))) {
-            $pdfone = $request->file('pdfone');
-            $pdfoneName = Auth()->id() . '_' . time() . '.' . $pdfone->extension();
+       // Handle 'pdfone' file upload
+    $pdfone = $request->file('pdfone');
+    if ($pdfone !== null) {
+        if ($pdfone instanceof \Illuminate\Http\UploadedFile) {
+            $pdfoneName = Auth::id() . '_' . time() . '.' . $pdfone->extension();
             $pdfone->move(public_path('uploads'), $pdfoneName);
         }
-        if (!empty($request->file('pdftwo'))) {
-            $pdftwo = $request->file('pdftwo');
-            $pdftwoName = Auth()->id() . '_' . time() . '.' . $pdftwo->extension();
+    }
+       // Handle 'pdftwo' file upload
+    $pdftwo = $request->file('pdftwo');
+    if ($pdftwo !== null) {
+        if ($pdftwo instanceof \Illuminate\Http\UploadedFile) {
+            $pdftwoName = Auth::id() . '_' . time() . '.' . $pdftwo->extension();
             $pdftwo->move(public_path('uploads'), $pdftwoName);
         }
+    }
         if (!empty($pdfoneName)) {
             $coordinator->pdfone = $pdfoneName;
         }
         if (!empty($pdftwoName)) {
             $coordinator->pdftwo = $pdftwoName;
         }
-        if (!empty($request->file('feature_img'))) {
-            $feature_img = $request->file('feature_img');
 
-            $image_name = Auth()->id() . '_' . time() . '.' . $feature_img->extension();
-            $feature_img->move(public_path('uploads/images'), $image_name);
-        }
+
+        // if (!empty($request->file('feature_img'))) {
+        //     $feature_img = $request->file('feature_img');
+
+        //     $image_name = Auth()->id() . '_' . time() . '.' . $feature_img->extension();
+        //     $feature_img->move(public_path('uploads/images'), $image_name);
+        // }
+
+         // Retrieve the single 'feature_img' file from the request
+    $feature_img = $request->file('feature_img');
+
+    
+
+    // Check if 'feature_img' is not null and is an instance of UploadedFile
+    if ($feature_img instanceof \Illuminate\Http\UploadedFile) {
+        $image_name = Auth::id() . '_' . time() . '.' . $feature_img->extension();
+        $feature_img->move(public_path('uploads/images'), $image_name);
+        
+        
+    }
 
 
 
@@ -169,16 +190,21 @@ class CoordinatorController extends Controller
             $pdftwoName = '';
             $image_name = '';
 
-            if (!empty($request->file('pdfone'))) {
-                $pdfone = $request->file('pdfone');
-                $pdfoneName = Auth()->id() . '_' . time() . '.' . $pdfone->extension();
-                $pdfone->move(public_path('uploads'), $pdfoneName);
-            }
-            if (!empty($request->file('pdftwo'))) {
-                $pdftwo = $request->file('pdftwo');
-                $pdftwoName = Auth()->id() . '_' . time() . '.' . $pdftwo->extension();
-                $pdftwo->move(public_path('uploads'), $pdftwoName);
-            }
+          // Handle upload for 'pdfone'
+    $pdfone = $request->file('pdfone');
+    if ($pdfone instanceof \Illuminate\Http\UploadedFile) {
+        $pdfoneName = Auth::id() . '_' . time() . '.' . $pdfone->extension();
+        $pdfone->move(public_path('uploads'), $pdfoneName);
+    }
+
+    // Handle upload for 'pdftwo'
+    $pdftwo = $request->file('pdftwo');
+    if ($pdftwo instanceof \Illuminate\Http\UploadedFile) {
+        $pdftwoName = Auth::id() . '_' . time() . '.' . $pdftwo->extension();
+        $pdftwo->move(public_path('uploads'), $pdftwoName);
+    }
+
+            
             if (!empty($pdfoneName)) {
                 $coordinator->pdfone = $pdfoneName;
             }
@@ -186,11 +212,19 @@ class CoordinatorController extends Controller
                 $coordinator->pdftwo = $pdftwoName;
             }
 
-            if (!empty($request->file('feature_img'))) {
-                $feature_img = $request->file('feature_img');
-                $image_name = Auth()->id() . '_' . time() . '.' . $feature_img->extension();
-                $feature_img->move(public_path('uploads'), $image_name);
-            }
+            // if (!empty($request->file('feature_img'))) {
+            //     $feature_img = $request->file('feature_img');
+            //     $image_name = Auth()->id() . '_' . time() . '.' . $feature_img->extension();
+            //     $feature_img->move(public_path('uploads'), $image_name);
+            // }
+
+            // Handle file upload for feature_image
+        $feature_img = $request->file('feature_image');
+        if ($feature_img instanceof \Illuminate\Http\UploadedFile) {
+            $image_name = Auth::id() . '_' . time() . '.' . $feature_img->extension();
+            $feature_img->move(public_path('uploads'), $image_name);
+            // $coordinator->feature_image = $image_name;
+        }
             if (!empty($image_name)) {
                 $coordinator->feature_img = $image_name;
             }
@@ -265,12 +299,20 @@ class CoordinatorController extends Controller
             if (!empty($request->input('postdate'))) {
                 $coordinator->postdate = convertdate($request->input('postdate'), 'Y-m-d H:i:s');
             }
-            if (!empty($request->file('feature_image'))) {
-                $feature_img = $request->file('feature_image');
-                $image_name = Auth()->id() . '_' . time() . '.' . $feature_img->extension();
-                $feature_img->move(public_path('uploads/images'), $image_name);
-                $coordinator->feature_image = $image_name;
-            }
+            // if (!empty($request->file('feature_image'))) {
+            //     $feature_img = $request->file('feature_image');
+            //     $image_name = Auth()->id() . '_' . time() . '.' . $feature_img->extension();
+            //     $feature_img->move(public_path('uploads/images'), $image_name);
+            //     $coordinator->feature_image = $image_name;
+            // }
+
+            // Handle file upload for feature_image
+        $feature_img = $request->file('feature_image');
+        if ($feature_img instanceof \Illuminate\Http\UploadedFile) {
+            $image_name = Auth::id() . '_' . time() . '.' . $feature_img->extension();
+            $feature_img->move(public_path('uploads/images'), $image_name);
+            $coordinator->feature_image = $image_name;
+        }
 
             $coordinator->save();
 
@@ -286,7 +328,7 @@ class CoordinatorController extends Controller
         }
     }
 
-    public function removeBanner(Request $request): JsonResponse
+    public function removeBanner(Request $request): RedirectResponse|JsonResponse
     {
         $image = $request->input('image');
         if (!empty($image)) {
@@ -314,11 +356,20 @@ class CoordinatorController extends Controller
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->query('search');
+       // $search = $request->query('search');
         $visionary = Coordinator::query();
-        if (request('search')) {
-            $visionary->where('name', 'Like', '%' . request('search') . '%');
+
+        // if (request('search')) {
+        //     $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'like', '%' . $search . '%');
         }
+
+
         $infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'annualreports')->paginate(20);
         return view('myadmin.annualreports.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Annual Reports : ' . $infrastructure->total() . ' Records found']);
     }
@@ -356,11 +407,18 @@ class CoordinatorController extends Controller
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->query('search');
+       // $search = $request->query('search');
         $visionary = Coordinator::query();
-        if (request('search')) {
-            $visionary->where('name', 'Like', '%' . request('search') . '%');
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'like', '%' . $search . '%');
         }
+
+        // if (request('search')) {
+        //     $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // }
         $infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'announcements')->paginate(20);
         return view('myadmin.announcements.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Announcements : ' . $infrastructure->total() . ' Records found']);
     }
@@ -393,11 +451,19 @@ class CoordinatorController extends Controller
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->query('search');
+      //  $search = $request->query('search');
         $visionary = Coordinator::query();
-        if (request('search')) {
-            $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // if (request('search')) {
+        //     $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'like', '%' . $search . '%');
         }
+
+
         $infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'newsupdates')->paginate(20);
         return view('myadmin.newsupdates.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'News & Updates : ' . $infrastructure->total() . ' Records found']);
     }
@@ -430,10 +496,16 @@ class CoordinatorController extends Controller
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->query('search');
+       // $search = $request->query('search');
         $visionary = Coordinator::query();
-        if (request('search')) {
-            $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // if (request('search')) {
+        //     $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'like', '%' . $search . '%');
         }
         $infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'latestupdates')->paginate(20);
         return view('myadmin.latestupdates.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Latest Updates : ' . $infrastructure->total() . ' Records found']);
@@ -469,15 +541,24 @@ class CoordinatorController extends Controller
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->query('search');
+     //   $search = $request->query('search');
         $visionary = Coordinator::query();
-        if (request('search')) {
-            $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // if (request('search')) {
+        //     $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'like', '%' . $search . '%');
         }
         $infrastructure =  $visionary->orderBy('order', 'ASC')->where('type', 'adminstaff')->paginate(20);
         return view('myadmin.admstaffs.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Adminstrative Staff Information : ' . $infrastructure->total() . ' Records found']);
     }
-    public function createadminstaff(): View|Factory|RedirectResponse
+
+
+//b.php
+public function createadminstaff(): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -507,6 +588,10 @@ class CoordinatorController extends Controller
     public function adminsataffUpdateOrder(Request $request): JsonResponse
     {
         $orders = $request->input('order');
+
+          /**
+     * @var array<int, array{id: int, position: int,type:string}> $orders
+     */
         foreach ($orders as $order) {
             $id = $order['id'];
             $position = $order['position'];
@@ -515,6 +600,7 @@ class CoordinatorController extends Controller
             $list = Coordinator::where('type', $type)
                 ->where('id', $id)
                 ->firstOrFail();
+                  /** @var Coordinator $list */
             $list->order = $position;
             $list->save();
         }
@@ -528,10 +614,16 @@ class CoordinatorController extends Controller
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->query('search');
+      //  $search = $request->query('search');
         $visionary = Coordinator::query();
-        if (request('search')) {
-            $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // if (request('search')) {
+        //     $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'like', '%' . $search . '%');
         }
         $infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'albums')->paginate(20);
         return view('myadmin.albums.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Campus Tours : ' . $infrastructure->total() . ' Records found']);
@@ -561,10 +653,16 @@ class CoordinatorController extends Controller
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->query('search');
+       // $search = $request->query('search');
         $visionary = Coordinator::query();
-        if (request('search')) {
-            $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // if (request('search')) {
+        //     $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'like', '%' . $search . '%');
         }
         $infrastructure =  $visionary->orderBy('order', 'ASC')->where('type', 'bogs')->paginate(40);
         return view('myadmin.bogs.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Board Of Governors : ' . $infrastructure->total() . ' Records found']);
@@ -573,6 +671,9 @@ class CoordinatorController extends Controller
     public function blogUpdateOrders(Request $request): JsonResponse
     {
         $orders = $request->input('order');
+          /**
+     * @var array<int, array{id: int, position: int}> $orders
+     */
         foreach ($orders as $order) {
             $id = $order['id'];
             $position = $order['position'];
@@ -580,6 +681,8 @@ class CoordinatorController extends Controller
             $list = Coordinator::where('type', 'bogs')
                 ->where('id', $id)
                 ->firstOrFail();
+
+                /** @var Coordinator $list */
             $list->order = $position;
             $list->save();
         }
@@ -589,7 +692,7 @@ class CoordinatorController extends Controller
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////
-    public function createbogs(): View|Factory
+    public function createbogs(): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -615,15 +718,20 @@ class CoordinatorController extends Controller
             return Redirect::route('bogs')->with('status', 'Mentioned Id does not exist.');
         }
     }
-    public function indexraac(Request $request): View|Factory
+    public function indexraac(Request $request): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->query('search');
+       // $search = $request->query('search');
         $visionary = Coordinator::query();
-        if (request('search')) {
-            $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // if (request('search')) {
+        //     $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // }
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'Like', '%' . $search . '%');
         }
         $infrastructure =  $visionary->orderBy('order', 'ASC')->where('type', 'raac')->paginate(40);
         return view('myadmin.raac.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Research and Academic Advisory Council: ' . $infrastructure->total() . ' Records found']);
@@ -632,6 +740,9 @@ class CoordinatorController extends Controller
     public function raacUpdateOrders(Request $request): JsonResponse
     {
         $orders = $request->input('order');
+           /**
+     * @var array<int, array{id: int, position: int}> $orders
+     */
         foreach ($orders as $order) {
             $id = $order['id'];
             $position = $order['position'];
@@ -639,6 +750,7 @@ class CoordinatorController extends Controller
             $list = Coordinator::where('type', 'raac')
                 ->where('id', $id)
                 ->firstOrFail();
+                /** @var Coordinator $list */
             $list->order = $position;
             $list->save();
         }
@@ -647,7 +759,7 @@ class CoordinatorController extends Controller
         return Response::json(['status' => 'success']);
     }
     ////////////////////////////////////////////////////////////////////////////////////
-    public function createraac(): View|Factory
+    public function createraac(): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -673,20 +785,27 @@ class CoordinatorController extends Controller
             return Redirect::route('raac')->with('status', 'Mentioned Id does not exist.');
         }
     }
-    public function indexphpadmissions(Request $request): View|Factory
+    public function indexphpadmissions(Request $request): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->query('search');
+      //  $search = $request->query('search');
         $visionary = Coordinator::query();
-        if (request('search')) {
-            $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // if (request('search')) {
+        //     $visionary->where('name', 'Like', '%' . request('search') . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'like', '%' . $search . '%');
         }
+
         $infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'admissions')->paginate(20);
         return view('myadmin.admissions.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Admissions : ' . $infrastructure->total() . ' Records found']);
     }
-    public function createadmissions(): View|Factory
+    public function createadmissions(): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
@@ -726,6 +845,9 @@ class CoordinatorController extends Controller
     public function admissionsUpdateOrders(Request $request): JsonResponse
     {
         $orders = $request->input('order');
+          /**
+     * @var array<int, array{id: int, position: int,albumid:int}> $orders
+     */
         foreach ($orders as $order) {
             $id = $order['id'];
             $position = $order['position'];
@@ -734,6 +856,7 @@ class CoordinatorController extends Controller
             $list = Albumimage::where('albumid', $albumid)
                 ->where('id', $id)
                 ->firstOrFail();
+                  /** @var Albumimage $list */
             $list->order = $position;
             $list->save();
         }
@@ -760,41 +883,76 @@ class CoordinatorController extends Controller
         ]);
 
         $attachmentfileName = '';
-        if (!empty($request->file('attachmentfile'))) {
-            $attachmentfile = $request->file('attachmentfile');
-            $attachmentfileName = $request->albumid . '_' . time() . '.' . $attachmentfile->extension();
-            $attachmentfile->move(public_path('userpics'), $attachmentfileName);
+        $attachmentfile = $request->file('attachmentfile'); // Ensure this is a single file
+        if (is_array($attachmentfile)) {
+            // Handle the case where multiple files are uploaded
+            foreach ($attachmentfile as $file) {
+              
+                    $attachmentfileName = $request->input('albumid') . '_' . time() . '.' . $file->extension(); // Use input() to access albumid
+                    $file->move(public_path('userpics'), $attachmentfileName); // Move the file
+                
+            }
+        } else {
+            if ($attachmentfile) { // Check if the file is not null
+                $attachmentfileName = $request->input('albumid') . '_' . time() . '.' . $attachmentfile->extension(); // Use input() to access albumid
+                $attachmentfile->move(public_path('userpics'), $attachmentfileName); // Move the file
+            }
         }
 
+       
+       
         $userDetailsInfo = Albumimage::find($request->input('albumid'));
         // dd($userDetailsInfo);
+         /** @var Albumimage|null $userDetailsInfo */
+         if($userDetailsInfo){
         $userDetailsInfo->feature_image = $request->input('attachmentfile');
         $userDetailsInfo->tititle = $request->input('attachmentname');
         // dd($userDetailsInfo->attachmentname);
         $userDetailsInfo->isactive = $request->input('isactive');
+         
 
         if (!empty($attachmentfileName)) {
             $userDetailsInfo->feature_image = $attachmentfileName;
         }
+    
 
         $saved = $userDetailsInfo->save();
+    }
         return Redirect::route('admissions', ['id' => $request->input('albumid')])->with('status', ' Content has been updated successfully');
     }
 
     ////////////////////////////////////////////////////////////////////
     public function filemanager(Request $request): JsonResponse
     {
-        // Get the uploaded file from the request
-        $file = $request->file('file');
+   // Initialize $filename variable
+   $filename = null;
 
-        $filename = time() . '_' . $file->getClientOriginalName();
+   // Get the uploaded file from the request
+   $file = $request->file('file'); 
 
-        $file->move(public_path('userpics'), $filename);
+   if (is_array($file)) {
+       // Handle the case where multiple files are uploaded
+       foreach ($file as $singleFile) {
+          
+               $filename = time() . '_' . $singleFile->getClientOriginalName(); // Get the original name
+               $singleFile->move(public_path('userpics'), $filename); // Move the file
+           
+       }
+   } else {
+       if ($file) { // Check if the file is not null
+           $filename = time() . '_' . $file->getClientOriginalName(); // Get the original name
+           $file->move(public_path('userpics'), $filename); // Move the file
+       }
+   }
 
-        $url = asset('userpics/' . $filename);
-// dd($url);
-		// Return the URL of the saved image
-		return Response::json(['location' => $url]);
+   // Ensure $filename is defined before using it
+   if ($filename === null) {
+       return Response::json(['error' => 'No file was uploaded'], 400);
+   }
+
+   $url = asset('userpics/' . $filename);
+   // Return the URL of the saved image
+   return Response::json(['location' => $url]);
 	}
 
 	////////////////////////////////////////////////////////////////////
@@ -803,11 +961,17 @@ class CoordinatorController extends Controller
 		if (getcurrentUserRole() != 'users') {
 			return Redirect::route('scientists');
 		}
-		$search = $request->query('search');
+	//	$search = $request->query('search');
 		$visionary = Coordinator::query();
-		if (request('search')) {
-			$visionary->where('name', 'Like', '%' . request('search') . '%');
-		}
+		// if (request('search')) {
+		// 	$visionary->where('name', 'Like', '%' . request('search') . '%');
+		// }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'like', '%' . $search . '%');
+        }
 		$infrastructure =  $visionary->orderBy('sortorder', 'ASC')->where('type', 'mou')->paginate(20);
 		return view('myadmin.mou.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Memorandum Of Understanding : ' . $infrastructure->total() . ' Records found']);
 	}
@@ -818,17 +982,18 @@ class CoordinatorController extends Controller
 		}
 		return view('myadmin.mou.createhtml', ['heading' => 'Memorandum Of Understanding'])->with('statusArrays', $this->statusArrays);
 	}
-	public function editmou(Request $request, $id): View|Factory|RedirectResponse
+	public function editmou(Request $request, int $id): View|Factory|RedirectResponse
 	{
 		if (getcurrentUserRole() != 'users') {
 			return Redirect::route('scientists');
 		}
 		$coordinators = Coordinator::where('id', $id)->first();
 		if ($coordinators) {
-			return view('myadmin.mou.edithtml')
-				->with('heading', 'Memorandum Of Understanding')
-				->with('statusArrays', $this->statusArrays)
-				->with('info', $coordinators);
+			return view('myadmin.mou.edithtml', [
+                'heading' => 'Memorandum Of Understanding',
+                'statusArrays' => $this->statusArrays,
+                'info' => $coordinators
+            ]);
 		} else {
 			return Redirect::route('mou')->with('status', 'Mentioned Id does not exist.');
 		}
@@ -838,18 +1003,28 @@ class CoordinatorController extends Controller
 		if (getcurrentUserRole() != 'users') {
 			return Redirect::route('scientists');
 		}
-		$search = $request->query('search');
+	//	$search = $request->query('search');
 		$visionary = Coordinator::join('sections', 'sections.id', '=', 'coordinators.catid')->select(['sections.sectionname', 'coordinators.*']);
-		if (request('search')) {
-			$visionary->where('coordinators.name', 'Like', '%' . request('search') . '%');
-		}
+		// if (request('search')) {
+		// 	$visionary->where('coordinators.name', 'Like', '%' . request('search') . '%');
+		// }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('coordinators.name', 'like', '%' . $search . '%');
+        }
 		$infrastructure =  $visionary->orderBy('order', 'ASC')->where('coordinators.type', 'honoraryadjunctfaculty')->paginate(20);
 		return view('myadmin.honoraryadjunctfaculty.listhtml', ['lists' => $infrastructure, 'search' => $search, 'totalrecords' => 'Honorary and Adjunct Faculty : ' . $infrastructure->total() . ' Records found']);
 	}
 	/////////////////////////////////////////////////////////////////////////
-	public function honorarysortorder(Request $request)
+	public function honorarysortorder(Request $request): JsonResponse
 	{
 		$orders = $request->input('order');
+
+        /**
+     * @var array<int, array{id: int, position: int}> $orders
+     */
 		foreach ($orders as $order) {
 			$id = $order['id'];
 			$position = $order['position'];
@@ -857,6 +1032,8 @@ class CoordinatorController extends Controller
 			$list = Coordinator::where('type', 'honoraryadjunctfaculty')
 				->where('id', $id)
 				->firstOrFail();
+
+                /** @var Coordinator $list */
 			$list->order = $position;
 			$list->save();
 		}
@@ -916,9 +1093,15 @@ class CoordinatorController extends Controller
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->query('search');
+       // $search = $request->query('search');
         $visionary = Coordinator::query();
-        if ($search) {
+        // if ($search) {
+        //     $visionary->where('name', 'like', '%' . $search . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
             $visionary->where('name', 'like', '%' . $search . '%');
         }
         $infrastructure = $visionary->where('type', 'tenders')->orderBy('sortorder', 'ASC')->paginate(20);
@@ -930,6 +1113,7 @@ class CoordinatorController extends Controller
         ]);
     }
 
+    //b.php
     public function createtenders(): View|Factory|RedirectResponse
     {
         if (getcurrentUserRole() != 'users') {
@@ -967,14 +1151,20 @@ class CoordinatorController extends Controller
     public function tenderUpdateOrders(Request $request): JsonResponse
     {
         $orders = $request->input('order');
+
+       /** 
+ * @var array<int, array{id: int, position: int, albumid: int}> $orders
+ */
         foreach ($orders as $order) {
-            if (isset($order['id'], $order['position'], $order['albumid'])) {
+            
                 $list = Albumimage::where('albumid', $order['albumid'])->where('id', $order['id'])->first();
                 if ($list) {
+
+                    /** @var Albumimage|null $list */
                     $list->order = $order['position'];
                     $list->save();
                 }
-            }
+            
         }
         return Response::json(['status' => 'success']);
     }
@@ -999,8 +1189,12 @@ class CoordinatorController extends Controller
         $attachmentfileName = '';
         if ($request->hasFile('attachmentfile')) {
             $attachmentfile = $request->file('attachmentfile');
-            $attachmentfileName = $request->input('albumid') . '_' . time() . '.' . $attachmentfile->extension();
-            $attachmentfile->move(public_path('userpics'), $attachmentfileName);
+
+            // Check if $attachmentfile is an instance of UploadedFile
+            if ($attachmentfile instanceof \Illuminate\Http\UploadedFile) {
+                $attachmentfileName = $request->input('albumid') . '_' . time() . '.' . $attachmentfile->extension();
+                $attachmentfile->move(public_path('userpics'), $attachmentfileName);
+            }
         }
 
         $userDetailsInfo = Albumimage::find($request->input('albumid'));
@@ -1027,10 +1221,16 @@ class CoordinatorController extends Controller
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->input('search');
+       // $search = $request->input('search');
         $visionary = Coordinator::query();
-        if ($search) {
-            $visionary->where('name', 'Like', '%' . $search . '%');
+        // if ($search) {
+        //     $visionary->where('name', 'Like', '%' . $search . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'like', '%' . $search . '%');
         }
         $infrastructure = $visionary->orderBy('id', 'DESC')->where('type', 'cif')->paginate(20);
         return view('myadmin.cif.listhtml', [
@@ -1074,10 +1274,16 @@ class CoordinatorController extends Controller
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->input('search');
+       // $search = $request->input('search');
         $visionary = Coordinator::query();
-        if ($search) {
-            $visionary->where('name', 'Like', '%' . $search . '%');
+        // if ($search) {
+        //     $visionary->where('name', 'Like', '%' . $search . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'like', '%' . $search . '%');
         }
         $infrastructure = $visionary->orderBy('sortorder', 'ASC')->where('type', 'technology')->paginate(20);
         return view('myadmin.technology.listhtml', [
@@ -1133,10 +1339,16 @@ class CoordinatorController extends Controller
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->input('search');
+       // $search = $request->input('search');
         $visionary = Coordinator::query();
-        if ($search) {
-            $visionary->where('name', 'Like', '%' . $search . '%');
+        // if ($search) {
+        //     $visionary->where('name', 'Like', '%' . $search . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'like', '%' . $search . '%');
         }
         $infrastructure = $visionary->orderBy('id', 'DESC')->where('type', 'deans')->paginate(20);
         return view('myadmin.deans.listhtml', [
@@ -1170,10 +1382,16 @@ class CoordinatorController extends Controller
 
     public function index(Request $request): View|Factory
     {
-        $search = $request->input('search');
+       // $search = $request->input('search');
         $visionary = Coordinator::query();
-        if ($search) {
-            $visionary->where('name', 'Like', '%' . $search . '%');
+        // if ($search) {
+        //     $visionary->where('name', 'Like', '%' . $search . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
+            $visionary->where('name', 'like', '%' . $search . '%');
         }
         $infrastructure = $visionary->orderBy('id', 'DESC')->where('type', 'infrastructure')->paginate(20);
         return view('myadmin.infrastructure.listhtml', [
@@ -1218,11 +1436,20 @@ class CoordinatorController extends Controller
 
     public function indexevents(Request $request): View|Factory
     {
-        $search = $request->input('search');
+        //$search = $request->input('search');
         $visionary = Coordinator::query();
-        if ($search) {
+        // if ($search) {
+        //     $visionary->where('name', 'Like', '%' . $search . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
             $visionary->where('name', 'Like', '%' . $search . '%');
         }
+
+        
+
         $infrastructure = $visionary->orderBy('id', 'DESC')->where('type', 'events')->paginate(20);
         return view('myadmin.events_initiatives.listhtml', [
             'lists' => $infrastructure,
@@ -1251,9 +1478,15 @@ class CoordinatorController extends Controller
 
     public function indexalumni(Request $request): View|Factory
     {
-        $search = $request->input('search');
+       // $search = $request->input('search');
         $visionary = Coordinator::query();
-        if ($search) {
+        // if ($search) {
+        //     $visionary->where('name', 'Like', '%' . $search . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
             $visionary->where('name', 'Like', '%' . $search . '%');
         }
         $infrastructure = $visionary->orderBy('id', 'DESC')->where('type', 'alumni')->paginate(20);
@@ -1351,9 +1584,15 @@ class CoordinatorController extends Controller
         if (getcurrentUserRole() != 'users') {
             return Redirect::route('scientists');
         }
-        $search = $request->input('search');
+       // $search = $request->input('search');
         $visionary = Coordinator::query();
-        if ($search) {
+        // if ($search) {
+        //     $visionary->where('name', 'Like', '%' . $search . '%');
+        // }
+
+        $search = $request->input('search', ''); // Default to empty string if not provided
+ 
+        if (is_string($search) && $search !== '') {
             $visionary->where('name', 'Like', '%' . $search . '%');
         }
         $infrastructure = $visionary->orderBy('id', 'DESC')->where('type', 'medialinks')->paginate(20);

@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder where(array|string $conditions, mixed $value = null, string $operator = '=')
  * @method static \Illuminate\Database\Eloquent\Builder join(string $table, string $first, string $operator = '=', string $second = null, string $type = 'inner', string $where = 'and')
  *@method static \App\Models\Researchinterest|null find($id, $columns = ['*'])
- * 
+ * @method static mixed max(string $column) Get the maximum value of a specified column.
  * 
  * 
  * 

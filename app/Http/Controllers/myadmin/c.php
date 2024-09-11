@@ -316,6 +316,9 @@ class CoordinatorController extends Controller
 
             $coordinator->save();
 
+
+            
+
             if ($request->input('type') == 'admissions') {
                 return Redirect::route('editadmissions', ['id' => $coordinator->id])->with('status', ' Content has been saved successfully');
             } else if ($request->input('type') == 'tenders') {
